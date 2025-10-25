@@ -93,8 +93,8 @@
                     maxHp: 2,
                     initiative: 5,
                     image: 'uggnug.png',
-                    x: 150,
-                    y: 150,
+                    x: 300,
+                    y: 350,
                     size: 80,
                     isDead: false,
                     statuses: [],
@@ -108,8 +108,8 @@
                     maxHp: 2,
                     initiative: 4,
                     image: 'raizo.png',
-                    x: 250,
-                    y: 150,
+                    x: 450,
+                    y: 350,
                     size: 80,
                     isDead: false,
                     statuses: [],
@@ -123,8 +123,8 @@
                     maxHp: 2,
                     initiative: 3,
                     image: 'vissra.png',
-                    x: 350,
-                    y: 150,
+                    x: 600,
+                    y: 350,
                     size: 80,
                     isDead: false,
                     statuses: [],
@@ -138,8 +138,8 @@
                     maxHp: 2,
                     initiative: 2,
                     image: 'zaheed.png',
-                    x: 450,
-                    y: 150,
+                    x: 750,
+                    y: 350,
                     size: 80,
                     isDead: false,
                     statuses: [],
@@ -153,8 +153,8 @@
                     maxHp: 2,
                     initiative: 1,
                     image: 'william.png',
-                    x: 550,
-                    y: 150,
+                    x: 900,
+                    y: 350,
                     size: 80,
                     isDead: false,
                     statuses: [],
@@ -247,6 +247,11 @@
                     hp = 0;
                 }
 
+                // Calculate viewport center
+                const battlefield = battlefieldRef.current;
+                const viewportCenterX = battlefield ? (battlefield.offsetWidth / 2 - panOffset.x) / zoomLevel : 400;
+                const viewportCenterY = battlefield ? (battlefield.offsetHeight / 2 - panOffset.y) / zoomLevel : 300;
+
                 const newChar = {
                     id: Date.now(),
                     name: formData.name,
@@ -255,8 +260,8 @@
                     maxHp: maxHp,
                     initiative: maxInitiative + 1,
                     image: formData.image,
-                    x: 100 + Math.random() * 200,
-                    y: 100 + Math.random() * 200,
+                    x: viewportCenterX - 40 + Math.random() * 80, // Center with slight randomness
+                    y: viewportCenterY - 40 + Math.random() * 80,
                     size: 80,
                     isDead: false,
                     statuses: [],
@@ -527,8 +532,11 @@
 
             /**
              * Get characters sorted by initiative (highest first)
+             * Filters out characters without initiative values
              */
-            const sortedByInitiative = [...characters].sort((a, b) => b.initiative - a.initiative);
+            const sortedByInitiative = [...characters]
+                .filter(c => c.initiative !== null && c.initiative !== undefined)
+                .sort((a, b) => b.initiative - a.initiative);
 
             // ========== SAVE/LOAD SYSTEM ==========
 
@@ -944,7 +952,8 @@
                                         left: `${char.x}px`,
                                         top: `${char.y}px`,
                                         width: `${char.size}px`,
-                                        height: `${char.size}px`
+                                        height: `${char.size}px`,
+                                        fontSize: `${char.size}px` // Base font size for em units
                                     }}
                                     onMouseDown={(e) => handleMouseDown(e, char)}
                                     onContextMenu={(e) => handleRightClick(e, char)}
@@ -1810,16 +1819,16 @@
                                             }}
                                             style={{
                                                 position: 'absolute',
-                                                top: '4px',
-                                                right: '4px',
-                                                width: '20px',
-                                                height: '20px',
+                                                top: '2px',
+                                                right: '2px',
+                                                width: '16px',
+                                                height: '16px',
                                                 borderRadius: '50%',
-                                                background: 'rgba(239, 68, 68, 0.8)',
+                                                background: 'rgba(0, 0, 0, 0.6)',
                                                 border: 'none',
-                                                color: 'white',
+                                                color: 'rgba(255, 255, 255, 0.7)',
                                                 cursor: 'pointer',
-                                                fontSize: '12px',
+                                                fontSize: '10px',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
@@ -1829,11 +1838,13 @@
                                             }}
                                             className="initiative-delete-btn"
                                             onMouseOver={(e) => {
-                                                e.target.style.background = 'rgba(239, 68, 68, 1)';
+                                                e.target.style.background = 'rgba(0, 0, 0, 0.9)';
+                                                e.target.style.color = 'white';
                                                 e.target.style.transform = 'scale(1.1)';
                                             }}
                                             onMouseOut={(e) => {
-                                                e.target.style.background = 'rgba(239, 68, 68, 0.8)';
+                                                e.target.style.background = 'rgba(0, 0, 0, 0.6)';
+                                                e.target.style.color = 'rgba(255, 255, 255, 0.7)';
                                                 e.target.style.transform = 'scale(1)';
                                             }}
                                         >
