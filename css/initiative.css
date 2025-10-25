@@ -37,7 +37,8 @@
 
 /* ==================== Initiative Title ==================== */
 /**
- * "Initiative Order" label on the left
+ * "Initiative Order" label on the left with Next Turn button
+ * Flex layout to position button next to title
  */
 .initiative-bottom-title {
     font-size: 14px;
@@ -46,6 +47,9 @@
     white-space: nowrap;
     text-transform: uppercase;
     letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 /* ==================== Scroll Container ==================== */
@@ -100,13 +104,20 @@
 }
 
 .initiative-card.dragging {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: grabbing;
+    transform: scale(0.95);
 }
 
-.initiative-card.drag-over {
+.initiative-card.drag-target {
     border-color: #6366f1;
-    background: rgba(99, 102, 241, 0.2);
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.initiative-card.drag-target:hover {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.25);
+    transform: scale(1.02);
 }
 
 /* ==================== Current Turn Highlighting ==================== */
@@ -144,6 +155,10 @@
 
 .initiative-card.neutral {
     border-left: 4px solid #fbbf24;
+}
+
+.initiative-card.structure {
+    border-left: 4px solid #8b5cf6;
 }
 
 /* ==================== Initiative Portrait ==================== */

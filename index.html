@@ -163,7 +163,8 @@
             ]);
 
             // UI State
-            const [showGrid, setShowGrid] = useState(false);
+            const [showGrid, setShowGrid] = useState(true); // Grid enabled by default
+            const [gridSize, setGridSize] = useState(50); // Default 5ft (50px)
             const [contextMenu, setContextMenu] = useState(null);
             const [draggedChar, setDraggedChar] = useState(null);
             const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -172,6 +173,7 @@
             const [currentTurn, setCurrentTurn] = useState(0);
             const [notes, setNotes] = useState('');
             const [history, setHistory] = useState([]);
+            const [draggedInitiativeIndex, setDraggedInitiativeIndex] = useState(null);
             const [backgroundImage, setBackgroundImage] = useState('none');
             const [customBackgroundImage, setCustomBackgroundImage] = useState('');
             const [backgroundOpacity, setBackgroundOpacity] = useState(1);
@@ -627,8 +629,56 @@
                                     <option value="ally">Ally</option>
                                     <option value="enemy">Enemy</option>
                                     <option value="neutral">Neutral</option>
+                                    <option value="structure">Structure</option>
                                 </select>
                             </div>
+                            {/* Icon and Color picker for structures */}
+                            {formData.type === 'structure' && (
+                                <div>
+                                    <div className="input-group">
+                                        <label>Icon</label>
+                                        <select
+                                            value={formData.structureIcon || '🏰'}
+                                            onChange={(e) => setFormData({ ...formData, structureIcon: e.target.value })}
+                                        >
+                                            <option value="🏰">🏰 Castle</option>
+                                            <option value="🏛️">🏛️ Temple</option>
+                                            <option value="🗿">🗿 Statue</option>
+                                            <option value="🌲">🌲 Tree</option>
+                                            <option value="🪨">🪨 Rock</option>
+                                            <option value="⛰️">⛰️ Mountain</option>
+                                            <option value="🌋">🌋 Volcano</option>
+                                            <option value="🏔️">🏔️ Snow Mountain</option>
+                                            <option value="🗼">🗼 Tower</option>
+                                            <option value="🕌">🕌 Dome</option>
+                                            <option value="⛩️">⛩️ Gate</option>
+                                            <option value="🛖">🛖 Hut</option>
+                                            <option value="🏚️">🏚️ Ruins</option>
+                                            <option value="🪵">🪵 Log</option>
+                                            <option value="🧱">🧱 Wall</option>
+                                            <option value="🚪">🚪 Door</option>
+                                            <option value="🪟">🪟 Window</option>
+                                            <option value="⚔️">⚔️ Crossed Swords</option>
+                                            <option value="🛡️">🛡️ Shield</option>
+                                            <option value="💎">💎 Gem</option>
+                                            <option value="📦">📦 Crate</option>
+                                            <option value="⚰️">⚰️ Coffin</option>
+                                            <option value="🔥">🔥 Fire</option>
+                                            <option value="💧">💧 Water</option>
+                                            <option value="⚡">⚡ Lightning</option>
+                                        </select>
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Color</label>
+                                        <input
+                                            type="color"
+                                            value={formData.structureColor || '#8b5cf6'}
+                                            onChange={(e) => setFormData({ ...formData, structureColor: e.target.value })}
+                                            style={{ width: '100%', height: '40px', cursor: 'pointer' }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                             {/* HP inputs only for allies */}
                             {formData.type === 'ally' && (
                                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -727,6 +777,24 @@
                                     style={{ width: '100%' }}
                                 />
                             </div>
+                            <div className="input-group">
+                                <label>Grid Size: {gridSize}px ({Math.round(gridSize / 10)}ft)</label>
+                                <input
+                                    type="range"
+                                    min="10"
+                                    max="250"
+                                    step="10"
+                                    value={gridSize}
+                                    onChange={(e) => setGridSize(parseInt(e.target.value))}
+                                    style={{ width: '100%' }}
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#888', marginTop: '4px' }}>
+                                    <span>1ft</span>
+                                    <span>5ft</span>
+                                    <span>10ft</span>
+                                    <span>25ft</span>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Characters List */}
@@ -806,7 +874,15 @@
                             className={`battlefield ${showGrid ? 'grid' : ''}`}
                             style={{
                                 position: 'relative',
-                                cursor: isPanning ? 'grabbing' : 'default'
+                                cursor: isPanning ? 'grabbing' : 'default',
+                                // Apply dynamic grid via CSS custom property
+                                ...(showGrid && {
+                                    '--grid-size': `${gridSize}px`,
+                                    backgroundImage: `
+                                        repeating-linear-gradient(0deg, transparent, transparent ${gridSize - 1}px, rgba(255,255,255,0.3) ${gridSize - 1}px, rgba(255,255,255,0.3) ${gridSize}px),
+                                        repeating-linear-gradient(90deg, transparent, transparent ${gridSize - 1}px, rgba(255,255,255,0.3) ${gridSize - 1}px, rgba(255,255,255,0.3) ${gridSize}px)
+                                    `
+                                })
                             }}
                             onWheel={handleWheel}
                             onMouseDown={handleBattlefieldMouseDown}
@@ -890,8 +966,8 @@
                                             </svg>
                                         )}
 
-                                        {/* Damage Tooltip for Enemies */}
-                                        {hoveredChar === char.id && char.damageLog && char.damageLog.length > 0 && (
+                                        {/* Damage Tooltip for Enemies and Neutrals */}
+                                        {hoveredChar === char.id && char.type !== 'ally' && char.damageLog && char.damageLog.length > 0 && (
                                             <div className="damage-tooltip">
                                                 <div style={{ fontWeight: 'bold', marginBottom: '6px', color: '#fca5a5' }}>
                                                     Damage Taken:
@@ -928,7 +1004,18 @@
                                         )}
 
                                         {/* Character image or placeholder */}
-                                        {char.image ? (
+                                        {char.type === 'structure' ? (
+                                            <div
+                                                className="token-placeholder structure"
+                                                style={{
+                                                    borderColor: char.structureColor || '#8b5cf6',
+                                                    boxShadow: `0 0 20px ${char.structureColor || '#8b5cf6'}80, inset 0 0 20px ${char.structureColor || '#8b5cf6'}30`,
+                                                    fontSize: '3em'
+                                                }}
+                                            >
+                                                {char.structureIcon || '🏰'}
+                                            </div>
+                                        ) : char.image ? (
                                             <img src={char.image} alt={char.name} className="token-image" />
                                         ) : (
                                             <div className={`token-placeholder ${char.type}`}>
@@ -1025,26 +1112,122 @@
                                     >
                                         ✏️ Rename
                                     </div>
-                                    <div className="context-menu-item">
-                                        <label htmlFor={`change-image-${currentChar.id}`} style={{ cursor: 'pointer', display: 'block', width: '100%' }}>
-                                            <input
-                                                type="file"
-                                                id={`change-image-${currentChar.id}`}
-                                                accept="image/*"
-                                                style={{ display: 'none' }}
-                                                onChange={(e) => {
-                                                    const file = e.target.files[0];
-                                                    if (file) {
-                                                        const reader = new FileReader();
-                                                        reader.onload = (event) => {
-                                                            updateCharacter(currentChar.id, { image: event.target.result });
-                                                        };
-                                                        reader.readAsDataURL(file);
-                                                    }
-                                                }}
-                                            />
-                                            🖼️ Change Image
-                                        </label>
+                                    {currentChar.type !== 'structure' && (
+                                        <div className="context-menu-item">
+                                            <label htmlFor={`change-image-${currentChar.id}`} style={{ cursor: 'pointer', display: 'block', width: '100%' }}>
+                                                <input
+                                                    type="file"
+                                                    id={`change-image-${currentChar.id}`}
+                                                    accept="image/*"
+                                                    style={{ display: 'none' }}
+                                                    onChange={(e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            const reader = new FileReader();
+                                                            reader.onload = (event) => {
+                                                                updateCharacter(currentChar.id, { image: event.target.result });
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        }
+                                                    }}
+                                                />
+                                                🖼️ Change Image
+                                            </label>
+                                        </div>
+                                    )}
+                                    {currentChar.type === 'structure' && (
+                                        <>
+                                            <div className="context-menu-item">
+                                                <label htmlFor={`structure-icon-${currentChar.id}`} style={{ cursor: 'pointer', display: 'block', width: '100%' }}>
+                                                    <select
+                                                        id={`structure-icon-${currentChar.id}`}
+                                                        value={currentChar.structureIcon || '🏰'}
+                                                        onChange={(e) => {
+                                                            updateCharacter(currentChar.id, { structureIcon: e.target.value });
+                                                        }}
+                                                        style={{
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            color: 'white',
+                                                            cursor: 'pointer',
+                                                            width: '100%'
+                                                        }}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <option value="🏰">🏰 Castle</option>
+                                                        <option value="🏛️">🏛️ Temple</option>
+                                                        <option value="🗿">🗿 Statue</option>
+                                                        <option value="🌲">🌲 Tree</option>
+                                                        <option value="🪨">🪨 Rock</option>
+                                                        <option value="⛰️">⛰️ Mountain</option>
+                                                        <option value="🌋">🌋 Volcano</option>
+                                                        <option value="🏔️">🏔️ Snow Mountain</option>
+                                                        <option value="🗼">🗼 Tower</option>
+                                                        <option value="🕌">🕌 Dome</option>
+                                                        <option value="⛩️">⛩️ Gate</option>
+                                                        <option value="🛖">🛖 Hut</option>
+                                                        <option value="🏚️">🏚️ Ruins</option>
+                                                        <option value="🪵">🪵 Log</option>
+                                                        <option value="🧱">🧱 Wall</option>
+                                                        <option value="🚪">🚪 Door</option>
+                                                        <option value="🪟">🪟 Window</option>
+                                                        <option value="⚔️">⚔️ Crossed Swords</option>
+                                                        <option value="🛡️">🛡️ Shield</option>
+                                                        <option value="💎">💎 Gem</option>
+                                                        <option value="📦">📦 Crate</option>
+                                                        <option value="⚰️">⚰️ Coffin</option>
+                                                        <option value="🔥">🔥 Fire</option>
+                                                        <option value="💧">💧 Water</option>
+                                                        <option value="⚡">⚡ Lightning</option>
+                                                    </select>
+                                                </label>
+                                            </div>
+                                            <div className="context-menu-item">
+                                                <label htmlFor={`structure-color-${currentChar.id}`} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                                                    🎨 Color
+                                                    <input
+                                                        type="color"
+                                                        id={`structure-color-${currentChar.id}`}
+                                                        value={currentChar.structureColor || '#8b5cf6'}
+                                                        onChange={(e) => {
+                                                            updateCharacter(currentChar.id, { structureColor: e.target.value });
+                                                        }}
+                                                        style={{
+                                                            marginLeft: 'auto',
+                                                            cursor: 'pointer',
+                                                            width: '40px',
+                                                            height: '24px',
+                                                            border: 'none'
+                                                        }}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                </label>
+                                            </div>
+                                        </>
+                                    )}
+                                    <div
+                                        className="context-menu-item"
+                                        onClick={() => {
+                                            const newInit = prompt(
+                                                currentChar.initiative === null || currentChar.initiative === undefined
+                                                    ? 'Enter initiative value (higher goes first):'
+                                                    : `Current initiative: ${currentChar.initiative}\nEnter new value:`,
+                                                currentChar.initiative !== null && currentChar.initiative !== undefined
+                                                    ? currentChar.initiative
+                                                    : ''
+                                            );
+                                            if (newInit !== null && newInit.trim() !== '') {
+                                                const initValue = parseInt(newInit);
+                                                if (!isNaN(initValue)) {
+                                                    saveHistory();
+                                                    updateCharacter(currentChar.id, { initiative: initValue });
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        {currentChar.initiative === null || currentChar.initiative === undefined
+                                            ? '➕ Add to Initiative'
+                                            : `🔢 Edit Initiative (${currentChar.initiative})`}
                                     </div>
                                 </div>
 
@@ -1124,8 +1307,8 @@
                                     </div>
                                 )}
 
-                                {/* Damage Tracking - only for enemies */}
-                                {currentChar.type === 'enemy' && (
+                                {/* Damage Tracking - for enemies and neutrals */}
+                                {currentChar.type !== 'ally' && (
                                 <div style={{ padding: '4px' }}>
                                     <div style={{ fontSize: '12px', color: '#aaa', padding: '8px 10px' }}>
                                         Damage Tracking
@@ -1293,6 +1476,17 @@
                                         {currentChar.isDead ? '❤️ Revive' : '💀 Mark as Dead'}
                                     </div>
                                     <div
+                                        className="context-menu-item"
+                                        onClick={() => {
+                                            if (confirm(`Remove ${currentChar.name} from initiative order? (They will stay on the battlefield)`)) {
+                                                saveHistory();
+                                                updateCharacter(currentChar.id, { initiative: null });
+                                            }
+                                        }}
+                                    >
+                                        ⏸️ Remove from Initiative
+                                    </div>
+                                    <div
                                         className="context-menu-item danger"
                                         onClick={() => {
                                             if (confirm(`Remove ${currentChar.name} from battle?`)) {
@@ -1311,7 +1505,45 @@
 
                     {/* INITIATIVE BAR (Bottom) */}
                     <div className={`initiative-bottom ${!sidebarVisible ? 'sidebar-hidden' : ''}`}>
-                        <div className="initiative-bottom-title">Initiative Order</div>
+                        <div className="initiative-bottom-title">
+                            <span>Initiative Order</span>
+                            {sortedByInitiative.length > 0 && (
+                                <button
+                                    onClick={() => {
+                                        const nextTurn = (currentTurn + 1) % sortedByInitiative.length;
+                                        setCurrentTurn(nextTurn);
+                                        // Auto-scroll to current turn card
+                                        setTimeout(() => {
+                                            const currentCard = document.querySelector('.initiative-card.current-turn');
+                                            if (currentCard) {
+                                                currentCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                            }
+                                        }, 50);
+                                    }}
+                                    style={{
+                                        padding: '6px 12px',
+                                        background: 'rgba(99, 102, 241, 0.6)',
+                                        border: '2px solid #6366f1',
+                                        borderRadius: '6px',
+                                        color: 'white',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        fontSize: '12px',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.target.style.background = 'rgba(99, 102, 241, 0.8)';
+                                        e.target.style.transform = 'scale(1.05)';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.target.style.background = 'rgba(99, 102, 241, 0.6)';
+                                        e.target.style.transform = 'scale(1)';
+                                    }}
+                                >
+                                    ⏭ Next Turn
+                                </button>
+                            )}
+                        </div>
                         <div className="initiative-scroll-container">
                             {sortedByInitiative.length === 0 ? (
                                 <div style={{ padding: '10px', color: '#888', fontSize: '13px' }}>
@@ -1321,12 +1553,75 @@
                                 sortedByInitiative.map((char, index) => (
                                     <div
                                         key={char.id}
-                                        className={`initiative-card ${char.type} ${index === currentTurn ? 'current-turn' : ''}`}
+                                        className={`initiative-card ${char.type} ${index === currentTurn ? 'current-turn' : ''} ${draggedInitiativeIndex === index ? 'dragging' : ''} ${draggedInitiativeIndex !== null && draggedInitiativeIndex !== index ? 'drag-target' : ''}`}
                                         draggable
                                         onClick={() => setCurrentTurn(index)}
+                                        onDragStart={(e) => {
+                                            setDraggedInitiativeIndex(index);
+                                            e.dataTransfer.effectAllowed = 'move';
+                                        }}
+                                        onDragEnd={() => {
+                                            setDraggedInitiativeIndex(null);
+                                        }}
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            e.dataTransfer.dropEffect = 'move';
+
+                                            // Auto-scroll if near edges
+                                            const container = e.currentTarget.parentElement;
+                                            const rect = container.getBoundingClientRect();
+                                            const scrollThreshold = 100;
+
+                                            if (e.clientX - rect.left < scrollThreshold) {
+                                                container.scrollLeft -= 5;
+                                            } else if (rect.right - e.clientX < scrollThreshold) {
+                                                container.scrollLeft += 5;
+                                            }
+                                        }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            if (draggedInitiativeIndex === null || draggedInitiativeIndex === index) return;
+
+                                            saveHistory();
+
+                                            // Reorder characters
+                                            const newChars = [...characters];
+                                            const draggedChar = sortedByInitiative[draggedInitiativeIndex];
+                                            const targetChar = sortedByInitiative[index];
+
+                                            // Find actual indices in characters array
+                                            const draggedIdx = newChars.findIndex(c => c.id === draggedChar.id);
+                                            const targetIdx = newChars.findIndex(c => c.id === targetChar.id);
+
+                                            // Swap initiative values
+                                            const tempInit = newChars[draggedIdx].initiative;
+                                            newChars[draggedIdx].initiative = newChars[targetIdx].initiative;
+                                            newChars[targetIdx].initiative = tempInit;
+
+                                            setCharacters(newChars);
+
+                                            // Adjust current turn if needed
+                                            if (currentTurn === draggedInitiativeIndex) {
+                                                setCurrentTurn(index);
+                                            } else if (currentTurn === index) {
+                                                setCurrentTurn(draggedInitiativeIndex);
+                                            }
+
+                                            setDraggedInitiativeIndex(null);
+                                        }}
                                     >
                                         <div className="initiative-portrait">
-                                            {char.image ? (
+                                            {char.type === 'structure' ? (
+                                                <div
+                                                    className="placeholder"
+                                                    style={{
+                                                        borderColor: char.structureColor || '#8b5cf6',
+                                                        fontSize: '24px'
+                                                    }}
+                                                >
+                                                    {char.structureIcon || '🏰'}
+                                                </div>
+                                            ) : char.image ? (
                                                 <img src={char.image} alt={char.name} />
                                             ) : (
                                                 <div className="placeholder">{char.name[0].toUpperCase()}</div>

@@ -39,7 +39,8 @@
 /* ==================== Grid Overlay ==================== */
 /**
  * Optional grid overlay for the battlefield
- * 50x50px squares for tactical positioning
+ * Dynamic grid size controlled by gridSize state (inline style)
+ * Grid lines use CSS variables for dynamic sizing
  */
 .battlefield.grid::after {
     content: '';
@@ -48,9 +49,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-image:
-        repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(255,255,255,0.3) 49px, rgba(255,255,255,0.3) 50px),
-        repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(255,255,255,0.3) 49px, rgba(255,255,255,0.3) 50px);
+    /* Grid applied via inline style with dynamic size */
     pointer-events: none;
     z-index: 10;
 }
@@ -195,6 +194,13 @@
     border-width: 6px;
 }
 
+/* Structure - Custom color border (set via inline style) */
+.token.structure .token-placeholder {
+    background: rgba(30, 30, 50, 0.9);
+    border-width: 6px;
+    /* Border color and shadow set via inline style */
+}
+
 /* ==================== HP Ring ==================== */
 /**
  * Circular HP indicator around ally tokens
@@ -213,40 +219,43 @@
 /* ==================== Token Info ==================== */
 /**
  * Name and HP text displayed below token
+ * Scales with token size for consistency
  */
 .token-info {
     position: absolute;
-    bottom: -30px;
+    bottom: -15%; /* Percentage of token size */
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.9);
-    padding: 4px 12px;
-    border-radius: 12px;
+    padding: 0.05em 0.15em; /* Relative to font size */
+    border-radius: 0.15em;
     white-space: nowrap;
-    font-size: 14px;
+    font-size: 0.175em; /* Relative to token size (14px at 80px token = 0.175) */
     font-weight: 600;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    min-font-size: 10px; /* Fallback minimum */
 }
 
 /* ==================== Status Effects ==================== */
 /**
  * Status effect badges displayed above token
  * (Stunned, Poisoned, Blessed, etc.)
+ * Scales with token size for consistency
  */
 .status-effects {
     position: absolute;
-    top: -25px;
+    top: -25%; /* Percentage of token size */
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 3px;
+    gap: 0.03em; /* Relative to token size */
 }
 
 .status-badge {
     background: rgba(0, 0, 0, 0.8);
-    padding: 2px 6px;
-    border-radius: 8px;
-    font-size: 10px;
+    padding: 0.025em 0.075em; /* Relative to font size */
+    border-radius: 0.1em;
+    font-size: 0.125em; /* Relative to token size (10px at 80px token = 0.125) */
     border: 1px solid;
 }
 
@@ -262,14 +271,14 @@
     background: rgba(20, 20, 30, 0.98);
     border: 2px solid #ef4444;
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 12px 14px;
     margin-left: 15px;
-    white-space: nowrap;
     font-size: 12px;
     z-index: 3000;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
     pointer-events: none;
-    max-width: 200px;
+    min-width: 250px;
+    max-width: 300px;
     white-space: normal;
 }
 
