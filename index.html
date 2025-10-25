@@ -1323,7 +1323,9 @@
                         {/* Context Menu (Right-click menu) */}
                         {(() => {
                             if (!contextMenu) return null;
-                            const currentChar = contextMenu.character;
+                            // Always get fresh character data from state
+                            const currentChar = characters.find(c => c.id === contextMenu.character.id);
+                            if (!currentChar) return null; // Character was deleted
 
                             return (
                             <div

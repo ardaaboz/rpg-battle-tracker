@@ -232,10 +232,9 @@
     padding: 4px 8px;
     border-radius: 4px;
     white-space: nowrap;
-    font-size: calc(var(--token-size, 80px) * 0.175); /* 17.5% of token size */
+    font-size: max(14px, calc(var(--token-size, 80px) * 0.175)); /* Min 14px or 17.5% of token size */
     font-weight: 600;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    min-font-size: 10px;
 }
 
 /* ==================== Status Effects ==================== */
@@ -257,7 +256,7 @@
     background: rgba(0, 0, 0, 0.8);
     padding: 2px 6px;
     border-radius: 6px;
-    font-size: calc(var(--token-size, 80px) * 0.15); /* 15% of token size */
+    font-size: max(12px, calc(var(--token-size, 80px) * 0.15)); /* Min 12px or 15% of token size */
     border: 1px solid;
 }
 
