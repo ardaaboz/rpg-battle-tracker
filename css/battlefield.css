@@ -225,14 +225,14 @@
  */
 .token-info {
     position: absolute;
-    bottom: calc(var(--token-size, 80px) * -0.6); /* 60% of token size below */
+    bottom: calc(var(--token-size, 80px) * -0.65); /* 65% of token size below */
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.9);
-    padding: 6px 10px;
-    border-radius: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
     white-space: nowrap;
-    font-size: calc(var(--token-size, 80px) * 0.2); /* 20% of token size */
+    font-size: calc(var(--token-size, 80px) * 0.16); /* 16% of token size */
     font-weight: 600;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
@@ -245,18 +245,18 @@
  */
 .status-effects {
     position: absolute;
-    top: calc(var(--token-size, 80px) * -0.5); /* 50% of token size above */
+    top: calc(var(--token-size, 80px) * -0.55); /* 55% of token size above */
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 4px;
+    gap: 3px;
 }
 
 .status-badge {
     background: rgba(0, 0, 0, 0.8);
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: calc(var(--token-size, 80px) * 0.18); /* 18% of token size */
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: calc(var(--token-size, 80px) * 0.14); /* 14% of token size */
     border: 1px solid;
 }
 

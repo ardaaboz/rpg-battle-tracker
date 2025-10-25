@@ -217,7 +217,8 @@
              * Enemies and neutrals don't have HP tracking
              */
             const addCharacter = () => {
-                if (!formData.name) return;
+                // Don't require name for structures
+                if (formData.type !== 'structure' && !formData.name) return;
 
                 // Validate HP for allies
                 if (formData.type === 'ally') {
@@ -254,9 +255,25 @@
                 const viewportCenterX = battlefield ? (battlefield.offsetWidth / 2 - panOffset.x) / zoomLevel : 400;
                 const viewportCenterY = battlefield ? (battlefield.offsetHeight / 2 - panOffset.y) / zoomLevel : 300;
 
+                // Auto-generate name for structures based on icon
+                let characterName = formData.name;
+                if (formData.type === 'structure') {
+                    const iconMap = {
+                        '🏰': 'Castle',
+                        '🏛️': 'Temple',
+                        '🗿': 'Statue',
+                        '🌲': 'Tree',
+                        '🪨': 'Boulder',
+                        '🔥': 'Fire',
+                        '💀': 'Skull',
+                        '⚔️': 'Sword'
+                    };
+                    characterName = iconMap[formData.structureIcon] || 'Structure';
+                }
+
                 const newChar = {
                     id: Date.now(),
-                    name: formData.name,
+                    name: characterName,
                     type: formData.type,
                     hp: hp,
                     maxHp: maxHp,
@@ -276,7 +293,15 @@
 
                 saveHistory();
                 setCharacters([newChar, ...characters]);
-                setFormData({ name: '', type: 'ally', hp: '', maxHp: '', image: '' });
+                setFormData({
+                    name: '',
+                    type: 'ally',
+                    hp: '',
+                    maxHp: '',
+                    image: '',
+                    structureIcon: '🏰',
+                    structureColor: '#8b5cf6'
+                });
             };
 
             /**
@@ -633,15 +658,18 @@
                         {/* Add Character Section */}
                         <div className="section">
                             <div className="section-title">Add Character</div>
-                            <div className="input-group">
-                                <label>Name</label>
-                                <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="Character name"
-                                />
-                            </div>
+                            {/* Only show name input if not structure */}
+                            {formData.type !== 'structure' && (
+                                <div className="input-group">
+                                    <label>Name</label>
+                                    <input
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        placeholder="Character name"
+                                    />
+                                </div>
+                            )}
                             <div className="input-group">
                                 <label>Type</label>
                                 <select
@@ -1034,8 +1062,7 @@
                                                 className="token-placeholder structure"
                                                 style={{
                                                     borderColor: char.structureColor || '#8b5cf6',
-                                                    boxShadow: `0 0 20px ${char.structureColor || '#8b5cf6'}80, inset 0 0 20px ${char.structureColor || '#8b5cf6'}30`,
-                                                    fontSize: '3em'
+                                                    boxShadow: `0 0 20px ${char.structureColor || '#8b5cf6'}80, inset 0 0 20px ${char.structureColor || '#8b5cf6}30`
                                                 }}
                                             >
                                                 {char.structureIcon || '🏰'}
