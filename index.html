@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Velutan Battle Tracker</title>
+
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/battlefield.css">
+    <link rel="stylesheet" href="css/context-menu.css">
+    <link rel="stylesheet" href="css/initiative.css">
+
+    <!-- React & Babel (for JSX) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!--
+        ==============================================================================
+        VELUTAN BATTLE TRACKER - Main Application
+        ==============================================================================
+
+        This is a tactical battle tracker for tabletop RPG sessions.
+        Designed for "Velutan" campaign - a low-HP combat system (typically 2 HP).
+
+        FEATURES:
+        - Drag-and-drop character tokens on battlefield
+        - HP tracking with visual indicators (for allies only)
+        - Damage logging system (for enemies)
+        - Initiative order management
+        - Status effects
+        - Grid overlay option
+        - Zoom and pan battlefield
+        - Save/load battle states
+        - Custom background images
+        - Resizable character tokens
+
+        CHARACTER TYPES:
+        - Ally: Green border, has HP tracking, no damage log
+        - Enemy: Red border, no HP tracking, has damage log
+        - Neutral: Yellow border, no HP tracking, no damage log
+
+        ==============================================================================
+    -->
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        /**
+         * Main App Component
+         *
+         * This component manages the entire battle tracker state and UI.
+         * Uses React hooks for state management.
+         */
+        function App() {
+            // ========== STATE MANAGEMENT ==========
+
+            /**
+             * Characters Array
+             * Contains all characters (allies, enemies, neutrals) on the battlefield
+             *
+             * Preset characters: Ugg'Nug, Raizo, Vissra, Zaheed, William
+             * These load automatically when the page opens
+             *
+             * Character structure:
+             * {
+             *   id: number,
+             *   name: string,
+             *   type: 'ally' | 'enemy' | 'neutral',
+             *   hp: number (0 for enemies/neutrals),
+             *   maxHp: number (0 for enemies/neutrals),
+             *   initiative: number,
+             *   image: string (path or data URL),
+             *   x: number (pixel position),
+             *   y: number (pixel position),
+             *   size: number (token size in pixels),
+             *   isDead: boolean,
+             *   statuses: string[],
+             *   damageLog: number[] (only for enemies)
+             * }
+             */
+            const [characters, setCharacters] = useState([
+                {
+                    id: 1,
+                    name: "Ugg'Nug",
+                    type: 'ally',
+                    hp: 2,
+                    maxHp: 2,
+                    initiative: 5,
+                    image: 'uggnug.png',
+                    x: 150,
+                    y: 150,
+                    size: 80,
+                    isDead: false,
+                    statuses: [],
+                    damageLog: []
+                },
+                {
+                    id: 2,
+                    name: 'Raizo',
+                    type: 'ally',
+                    hp: 2,
+                    maxHp: 2,
+                    initiative: 4,
+                    image: 'raizo.png',
+                    x: 250,
+                    y: 150,
+                    size: 80,
+                    isDead: false,
+                    statuses: [],
+                    damageLog: []
+                },
+                {
+                    id: 3,
+                    name: 'Vissra',
+                    type: 'ally',
+                    hp: 2,
+                    maxHp: 2,
+                    initiative: 3,
+                    image: 'vissra.png',
+                    x: 350,
+                    y: 150,
+                    size: 80,
+                    isDead: false,
+                    statuses: [],
+                    damageLog: []
+                },
+                {
+                    id: 4,
+                    name: 'Zaheed',
+                    type: 'ally',
+                    hp: 2,
+                    maxHp: 2,
+                    initiative: 2,
+                    image: 'zaheed.png',
+                    x: 450,
+                    y: 150,
+                    size: 80,
+                    isDead: false,
+                    statuses: [],
+                    damageLog: []
+                },
+                {
+                    id: 5,
+                    name: 'William',
+                    type: 'ally',
+                    hp: 2,
+                    maxHp: 2,
+                    initiative: 1,
+                    image: 'william.png',
+                    x: 550,
+                    y: 150,
+                    size: 80,
+                    isDead: false,
+                    statuses: [],
+                    damageLog: []
+                }
+            ]);
+
+            // UI State
+            const [showGrid, setShowGrid] = useState(false);
+            const [contextMenu, setContextMenu] = useState(null);
+            const [draggedChar, setDraggedChar] = useState(null);
+            const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+            const [resizingChar, setResizingChar] = useState(null);
+            const [resizeStart, setResizeStart] = useState({ size: 0, mouseX: 0, mouseY: 0 });
+            const [currentTurn, setCurrentTurn] = useState(0);
+            const [notes, setNotes] = useState('');
+            const [history, setHistory] = useState([]);
+            const [backgroundImage, setBackgroundImage] = useState('none');
+            const [customBackgroundImage, setCustomBackgroundImage] = useState('');
+            const [backgroundOpacity, setBackgroundOpacity] = useState(1);
+            const [editMode, setEditMode] = useState(null);
+            const [draggedInitiative, setDraggedInitiative] = useState(null);
+            const [notesVisible, setNotesVisible] = useState(true);
+            const [notesPosition, setNotesPosition] = useState({ x: window.innerWidth - 340, y: 80 });
+            const [notesSize, setNotesSize] = useState({ width: 300, height: 200 });
+            const [isDraggingNotes, setIsDraggingNotes] = useState(false);
+            const [notesOffset, setNotesOffset] = useState({ x: 0, y: 0 });
+            const [hoveredChar, setHoveredChar] = useState(null);
+            const [zoomLevel, setZoomLevel] = useState(1);
+            const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+            const [isPanning, setIsPanning] = useState(false);
+            const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+            const [sidebarVisible, setSidebarVisible] = useState(true);
+
+            // Form data for adding new characters
+            const [formData, setFormData] = useState({
+                name: '',
+                type: 'ally',
+                hp: '',
+                maxHp: '',
+                image: ''
+            });
+
+            // Ref for battlefield DOM element
+            const battlefieldRef = useRef(null);
+
+            // Predefined status effects
+            const statusOptions = ['Stunned', 'Poisoned', 'Blessed', 'Cursed', 'Invisible', 'Prone'];
+
+            // ========== CHARACTER MANAGEMENT ==========
+
+            /**
+             * Add a new character to the battlefield
+             * Validates HP requirements for allies
+             * Enemies and neutrals don't have HP tracking
+             */
+            const addCharacter = () => {
+                if (!formData.name) return;
+
+                // Validate HP for allies
+                if (formData.type === 'ally') {
+                    if (!formData.hp || !formData.maxHp) {
+                        alert('HP and Max HP are required for allies');
+                        return;
+                    }
+                    const hp = parseFloat(formData.hp);
+                    const maxHp = parseFloat(formData.maxHp);
+                    if (maxHp < hp) {
+                        alert('Max HP cannot be less than HP');
+                        return;
+                    }
+                }
+
+                // Auto-assign initiative as highest + 1
+                const maxInitiative = characters.length > 0
+                    ? Math.max(...characters.map(c => c.initiative))
+                    : 0;
+
+                // Set HP based on character type (only allies have HP)
+                let maxHp, hp;
+                if (formData.type === 'ally') {
+                    maxHp = parseFloat(formData.maxHp);
+                    hp = parseFloat(formData.hp);
+                } else {
+                    // Enemies and neutrals don't have HP tracking
+                    maxHp = 0;
+                    hp = 0;
+                }
+
+                const newChar = {
+                    id: Date.now(),
+                    name: formData.name,
+                    type: formData.type,
+                    hp: hp,
+                    maxHp: maxHp,
+                    initiative: maxInitiative + 1,
+                    image: formData.image,
+                    x: 100 + Math.random() * 200,
+                    y: 100 + Math.random() * 200,
+                    size: 80,
+                    isDead: false,
+                    statuses: [],
+                    damageLog: []
+                };
+
+                saveHistory();
+                setCharacters([newChar, ...characters]);
+                setFormData({ name: '', type: 'ally', hp: '', maxHp: '', image: '' });
+            };
+
+            /**
+             * Update character properties
+             * @param {number} id - Character ID
+             * @param {object} updates - Properties to update
+             */
+            const updateCharacter = (id, updates) => {
+                saveHistory();
+                setCharacters(characters.map(char =>
+                    char.id === id ? { ...char, ...updates } : char
+                ));
+            };
+
+            /**
+             * Adjust character HP
+             * Only works for allies
+             * @param {object} char - Character object
+             * @param {number} amount - HP change amount (positive for heal, negative for damage)
+             */
+            const adjustHP = (char, amount) => {
+                const newHp = Math.max(0, Math.min(char.maxHp, char.hp + amount));
+                updateCharacter(char.id, { hp: newHp });
+            };
+
+            // ========== HISTORY & UNDO SYSTEM ==========
+
+            /**
+             * Save current state to history for undo functionality
+             * Keeps last 10 states
+             */
+            const saveHistory = () => {
+                setHistory([...history.slice(-9), JSON.parse(JSON.stringify(characters))]);
+            };
+
+            /**
+             * Undo last action
+             * Restores previous character state
+             */
+            const undo = () => {
+                if (history.length > 0) {
+                    const previous = history[history.length - 1];
+                    setCharacters(previous);
+                    setHistory(history.slice(0, -1));
+                }
+            };
+
+            // ========== IMAGE HANDLING ==========
+
+            /**
+             * Handle character image upload
+             * Converts to data URL for storage
+             */
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        setFormData({ ...formData, image: event.target.result });
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            // ========== DRAG AND DROP (CHARACTERS) ==========
+
+            /**
+             * Start dragging a character token
+             * Calculates offset accounting for zoom and pan
+             */
+            const handleMouseDown = (e, char) => {
+                if (e.button !== 0) return; // Only left click
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                const battlefield = battlefieldRef.current;
+                if (!battlefield) return;
+
+                const rect = battlefield.getBoundingClientRect();
+
+                // Calculate position accounting for zoom and pan
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                const gameX = (mouseX - panOffset.x) / zoomLevel;
+                const gameY = (mouseY - panOffset.y) / zoomLevel;
+
+                setDragOffset({
+                    x: gameX - char.x,
+                    y: gameY - char.y
+                });
+                setDraggedChar(char.id);
+            };
+
+            /**
+             * Start panning the battlefield
+             * Only triggers when clicking on empty space
+             */
+            const handleBattlefieldMouseDown = (e) => {
+                if (e.button !== 0) return; // Only left click
+
+                // Check if clicking on a token or interactive element
+                const isToken = e.target.closest('.token');
+                const isContextMenu = e.target.closest('.context-menu');
+                const isToolbar = e.target.closest('.toolbar');
+
+                if (isToken || isContextMenu || isToolbar) {
+                    return; // Don't pan when clicking on these elements
+                }
+
+                setIsPanning(true);
+                setPanStart({
+                    x: e.clientX - panOffset.x,
+                    y: e.clientY - panOffset.y
+                });
+            };
+
+            /**
+             * Handle mouse wheel for zooming
+             * Prevents default scroll behavior
+             */
+            const handleWheel = (e) => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                const newZoom = Math.max(0.3, Math.min(3, zoomLevel + delta));
+                setZoomLevel(newZoom);
+            };
+
+            /**
+             * Handle mouse movement
+             * Updates character position, panning, or resizing based on active mode
+             */
+            const handleMouseMove = (e) => {
+                // Handle panning
+                if (isPanning) {
+                    setPanOffset({
+                        x: e.clientX - panStart.x,
+                        y: e.clientY - panStart.y
+                    });
+                    return;
+                }
+
+                // Handle token resizing
+                if (resizingChar) {
+                    const deltaX = e.clientX - resizeStart.mouseX;
+                    const deltaY = e.clientY - resizeStart.mouseY;
+                    const avgDelta = (deltaX + deltaY) / 2;
+                    const newSize = Math.max(40, Math.min(300, resizeStart.size + avgDelta));
+
+                    setCharacters(characters.map(char =>
+                        char.id === resizingChar
+                            ? { ...char, size: newSize }
+                            : char
+                    ));
+                    return;
+                }
+
+                // Handle character dragging
+                if (!draggedChar) return;
+
+                const battlefield = battlefieldRef.current;
+                if (!battlefield) return;
+
+                const rect = battlefield.getBoundingClientRect();
+
+                // Account for both zoom and pan offset when calculating position
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                const gameX = (mouseX - panOffset.x) / zoomLevel;
+                const gameY = (mouseY - panOffset.y) / zoomLevel;
+
+                const x = gameX - dragOffset.x;
+                const y = gameY - dragOffset.y;
+
+                setCharacters(characters.map(char =>
+                    char.id === draggedChar
+                        ? { ...char, x, y }
+                        : char
+                ));
+            };
+
+            /**
+             * End dragging/resizing/panning
+             * Saves history if character was moved or resized
+             */
+            const handleMouseUp = () => {
+                if (draggedChar || resizingChar) {
+                    saveHistory();
+                }
+                setDraggedChar(null);
+                setResizingChar(null);
+                setIsPanning(false);
+            };
+
+            /**
+             * Start resizing a token
+             * @param {MouseEvent} e - Mouse event
+             * @param {object} char - Character to resize
+             */
+            const handleResizeStart = (e, char) => {
+                e.stopPropagation();
+                e.preventDefault();
+                setResizingChar(char.id);
+                setResizeStart({
+                    size: char.size,
+                    mouseX: e.clientX,
+                    mouseY: e.clientY
+                });
+            };
+
+            // ========== CONTEXT MENU ==========
+
+            /**
+             * Show context menu on right-click
+             * Smart positioning prevents overflow off screen
+             */
+            const handleRightClick = (e, char) => {
+                e.preventDefault();
+
+                // Calculate position to prevent overflow
+                const menuWidth = 240;
+                const menuHeight = 600;
+                const padding = 10;
+
+                let x = e.clientX;
+                let y = e.clientY;
+
+                // Check if menu would overflow right or bottom edges
+                if (x + menuWidth > window.innerWidth) {
+                    x = window.innerWidth - menuWidth - padding;
+                }
+                if (y + menuHeight > window.innerHeight) {
+                    y = window.innerHeight - menuHeight - padding;
+                }
+
+                // Ensure menu doesn't go off top or left edges
+                x = Math.max(padding, x);
+                y = Math.max(padding, y);
+
+                setContextMenu({
+                    x,
+                    y,
+                    character: char
+                });
+            };
+
+            // ========== INITIATIVE ORDER ==========
+
+            /**
+             * Get characters sorted by initiative (highest first)
+             */
+            const sortedByInitiative = [...characters].sort((a, b) => b.initiative - a.initiative);
+
+            // ========== SAVE/LOAD SYSTEM ==========
+
+            /**
+             * Save current battle state to JSON file
+             * Includes all characters, notes, background, and settings
+             */
+            const saveState = () => {
+                const state = {
+                    characters,
+                    notes,
+                    backgroundImage,
+                    customBackgroundImage,
+                    backgroundOpacity,
+                    currentTurn
+                };
+                const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `velutan-battle-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+            };
+
+            /**
+             * Load battle state from JSON file
+             * Restores all saved settings
+             */
+            const loadState = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const state = JSON.parse(event.target.result);
+                        setCharacters(state.characters || []);
+                        setNotes(state.notes || '');
+                        setBackgroundImage(state.backgroundImage || 'none');
+                        setCustomBackgroundImage(state.customBackgroundImage || '');
+                        setBackgroundOpacity(state.backgroundOpacity || 1);
+                        setCurrentTurn(state.currentTurn || 0);
+                    };
+                    reader.readAsText(file);
+                }
+            };
+
+            // ========== BACKGROUND IMAGES ==========
+
+            /**
+             * Predefined background options
+             * Stock environment textures
+             */
+            const backgrounds = {
+                none: { name: 'None', image: '' },
+                desert: { name: 'Desert', image: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1200' },
+                forest: { name: 'Forest', image: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200' },
+                grasslands: { name: 'Grasslands', image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200' },
+                ice: { name: 'Ice', image: 'https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?w=1200' },
+                snow: { name: 'Snow', image: 'https://images.unsplash.com/photo-1491002052546-bf38f186af56?w=1200' },
+                custom: { name: 'Custom Upload', image: '' }
+            };
+
+            // ========== EFFECTS & CLEANUP ==========
+
+            /**
+             * Close context menu when clicking outside
+             */
+            useEffect(() => {
+                const handleClick = () => setContextMenu(null);
+                document.addEventListener('click', handleClick);
+                return () => document.removeEventListener('click', handleClick);
+            }, []);
+
+            // ========== RENDER ==========
+
+            return (
+                <div className="app-container" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
+                    {/* Sidebar Toggle Button */}
+                    <button
+                        className={`sidebar-toggle ${sidebarVisible ? 'sidebar-visible' : ''}`}
+                        onClick={() => setSidebarVisible(!sidebarVisible)}
+                        title={sidebarVisible ? 'Hide Sidebar' : 'Show Sidebar'}
+                    >
+                        ☰
+                    </button>
+
+                    {/* SIDEBAR - Character management, settings, save/load */}
+                    <div className={`sidebar ${!sidebarVisible ? 'hidden' : ''}`}>
+                        <h1 style={{ marginBottom: '20px', fontSize: '24px', textAlign: 'center', color: '#a78bfa' }}>
+                            Velutan Battle Tracker
+                        </h1>
+
+                        {/* Add Character Section */}
+                        <div className="section">
+                            <div className="section-title">Add Character</div>
+                            <div className="input-group">
+                                <label>Name</label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    placeholder="Character name"
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Type</label>
+                                <select
+                                    value={formData.type}
+                                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                >
+                                    <option value="ally">Ally</option>
+                                    <option value="enemy">Enemy</option>
+                                    <option value="neutral">Neutral</option>
+                                </select>
+                            </div>
+                            {/* HP inputs only for allies */}
+                            {formData.type === 'ally' && (
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <div className="input-group" style={{ flex: 1 }}>
+                                        <label>HP *</label>
+                                        <input
+                                            type="number"
+                                            step="0.25"
+                                            value={formData.hp}
+                                            onChange={(e) => setFormData({ ...formData, hp: e.target.value })}
+                                            placeholder="2"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="input-group" style={{ flex: 1 }}>
+                                        <label>Max HP *</label>
+                                        <input
+                                            type="number"
+                                            step="0.25"
+                                            value={formData.maxHp}
+                                            onChange={(e) => setFormData({ ...formData, maxHp: e.target.value })}
+                                            placeholder="2"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            <div className="input-group">
+                                <label>Image (optional)</label>
+                                <div className="file-input-wrapper">
+                                    <input
+                                        type="file"
+                                        id="charImage"
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                    />
+                                    <label htmlFor="charImage" className="file-input-label">
+                                        {formData.image ? '✓ Image Selected' : '🖼️ Upload Image'}
+                                    </label>
+                                </div>
+                            </div>
+                            <button className="btn btn-primary" onClick={addCharacter}>
+                                ➕ Add Character
+                            </button>
+                        </div>
+
+                        {/* Background Settings */}
+                        <div className="section">
+                            <div className="section-title">Background</div>
+                            <div className="input-group">
+                                <label>Background Image</label>
+                                <select
+                                    value={backgroundImage}
+                                    onChange={(e) => setBackgroundImage(e.target.value)}
+                                >
+                                    {Object.entries(backgrounds).map(([key, bg]) => (
+                                        <option key={key} value={key}>{bg.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            {/* Custom background upload */}
+                            {backgroundImage === 'custom' && (
+                                <div className="input-group">
+                                    <label>Upload Background</label>
+                                    <div className="file-input-wrapper">
+                                        <input
+                                            type="file"
+                                            id="backgroundUpload"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onload = (event) => {
+                                                        setCustomBackgroundImage(event.target.result);
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                        />
+                                        <label htmlFor="backgroundUpload" className="file-input-label">
+                                            {customBackgroundImage ? '✓ Custom Background Set' : '🖼️ Upload Image'}
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="input-group">
+                                <label>Background Opacity: {backgroundOpacity.toFixed(2)}</label>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    step="0.1"
+                                    value={backgroundOpacity}
+                                    onChange={(e) => setBackgroundOpacity(parseFloat(e.target.value))}
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Characters List */}
+                        <div className="section">
+                            <div className="section-title">Characters ({characters.length})</div>
+                            <div className="character-list">
+                                {characters.map(char => (
+                                    <div key={char.id} className="character-item">
+                                        <span>{char.name}</span>
+                                        <span style={{ fontSize: '12px', color: '#888' }}>
+                                            {char.type === 'ally' ? `${char.hp}/${char.maxHp} HP` : char.type}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Save/Load Buttons */}
+                        <div className="section">
+                            <button className="btn btn-secondary" onClick={saveState}>
+                                💾 Save Battle
+                            </button>
+                            <div className="file-input-wrapper" style={{ width: '100%', marginBottom: '8px' }}>
+                                <input
+                                    type="file"
+                                    id="loadState"
+                                    accept=".json"
+                                    onChange={loadState}
+                                />
+                                <label htmlFor="loadState" className="btn btn-secondary" style={{ width: '100%', margin: 0, display: 'block', boxSizing: 'border-box' }}>
+                                    📂 Load Battle
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* BATTLEFIELD AREA */}
+                    <div className={`battlefield-container ${!sidebarVisible ? 'sidebar-hidden' : ''}`} onMouseDown={handleBattlefieldMouseDown}>
+                        {/* Toolbar (top-right) */}
+                        <div className="toolbar">
+                            <button
+                                className={`toolbar-btn ${showGrid ? 'active' : ''}`}
+                                onClick={() => setShowGrid(!showGrid)}
+                            >
+                                # {showGrid ? 'Hide Grid' : 'Show Grid'}
+                            </button>
+                            <button
+                                className="toolbar-btn"
+                                onClick={undo}
+                                disabled={history.length === 0}
+                                style={{ opacity: history.length === 0 ? 0.5 : 1 }}
+                            >
+                                ↶ Undo
+                            </button>
+                            <button
+                                className="toolbar-btn"
+                                onClick={() => {
+                                    if (confirm('Clear all characters from battlefield?')) {
+                                        saveHistory();
+                                        setCharacters([]);
+                                    }
+                                }}
+                            >
+                                🗑️ Clear All
+                            </button>
+                            <button
+                                className={`toolbar-btn ${notesVisible ? 'active' : ''}`}
+                                onClick={() => setNotesVisible(!notesVisible)}
+                            >
+                                📝 {notesVisible ? 'Hide Notes' : 'Show Notes'}
+                            </button>
+                        </div>
+
+                        {/* Main Battlefield */}
+                        <div
+                            ref={battlefieldRef}
+                            className={`battlefield ${showGrid ? 'grid' : ''}`}
+                            style={{
+                                position: 'relative',
+                                cursor: isPanning ? 'grabbing' : 'default'
+                            }}
+                            onWheel={handleWheel}
+                            onMouseDown={handleBattlefieldMouseDown}
+                        >
+                            {/* Background image layer */}
+                            <div style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                backgroundImage: backgroundImage !== 'none' && backgroundImage !== 'custom'
+                                    ? `url(${backgrounds[backgroundImage].image})`
+                                    : backgroundImage === 'custom'
+                                    ? `url(${customBackgroundImage})`
+                                    : 'none',
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                backgroundRepeat: 'no-repeat',
+                                opacity: backgroundOpacity,
+                                pointerEvents: 'none',
+                                zIndex: 0
+                            }} />
+
+                            {/* Content layer - contains all tokens */}
+                            <div style={{
+                                position: 'relative',
+                                zIndex: 1,
+                                width: '100%',
+                                height: '100%',
+                                transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+                                transformOrigin: 'center center',
+                                transition: isPanning ? 'none' : 'transform 0.2s ease'
+                            }}>
+                            {/* Render all character tokens */}
+                            {characters.map(char => {
+                                const hpPercent = char.maxHp > 0 ? Math.min(100, (char.hp / char.maxHp) * 100) : 0;
+                                const hpColor = hpPercent > 66 ? '#10b981' : hpPercent > 33 ? '#f59e0b' : '#ef4444';
+
+                                return (
+                                <div
+                                    key={char.id}
+                                    className={`token ${char.type} ${draggedChar === char.id ? 'dragging' : ''} ${char.isDead ? 'dead' : ''}`}
+                                    style={{
+                                        left: `${char.x}px`,
+                                        top: `${char.y}px`,
+                                        width: `${char.size}px`,
+                                        height: `${char.size}px`
+                                    }}
+                                    onMouseDown={(e) => handleMouseDown(e, char)}
+                                    onContextMenu={(e) => handleRightClick(e, char)}
+                                    onMouseEnter={() => setHoveredChar(char.id)}
+                                    onMouseLeave={() => setHoveredChar(null)}
+                                >
+                                    <div className="token-inner">
+                                        {/* HP Ring - only for allies */}
+                                        {char.type === 'ally' && (
+                                            <svg
+                                                className="token-hp-ring"
+                                                viewBox="0 0 100 100"
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: '-8px',
+                                                    left: '-8px',
+                                                    width: 'calc(100% + 16px)',
+                                                    height: 'calc(100% + 16px)'
+                                                }}
+                                            >
+                                                <circle
+                                                    cx="50"
+                                                    cy="50"
+                                                    r="46"
+                                                    fill="none"
+                                                    stroke={hpColor}
+                                                    strokeWidth="4"
+                                                    strokeDasharray={`${hpPercent * 2.89} ${(100 - hpPercent) * 2.89}`}
+                                                    strokeDashoffset="0"
+                                                    transform="rotate(-90 50 50)"
+                                                    opacity="0.9"
+                                                />
+                                            </svg>
+                                        )}
+
+                                        {/* Damage Tooltip for Enemies */}
+                                        {hoveredChar === char.id && char.damageLog && char.damageLog.length > 0 && (
+                                            <div className="damage-tooltip">
+                                                <div style={{ fontWeight: 'bold', marginBottom: '6px', color: '#fca5a5' }}>
+                                                    Damage Taken:
+                                                </div>
+                                                {char.damageLog.map((dmg, idx) => (
+                                                    <div key={idx} className="damage-entry">
+                                                        • {dmg} damage
+                                                    </div>
+                                                ))}
+                                                <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold' }}>
+                                                    Total: {char.damageLog.reduce((a, b) => a + b, 0)}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Status effects badges */}
+                                        {char.statuses && char.statuses.length > 0 && (
+                                            <div className="status-effects">
+                                                {char.statuses.map((status, idx) => (
+                                                    <span
+                                                        key={idx}
+                                                        className="status-badge"
+                                                        style={{
+                                                            borderColor: status === 'Poisoned' ? '#a855f7' :
+                                                                       status === 'Stunned' ? '#fbbf24' :
+                                                                       status === 'Blessed' ? '#3b82f6' :
+                                                                       status === 'Cursed' ? '#ef4444' : '#888'
+                                                        }}
+                                                    >
+                                                        {status}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Character image or placeholder */}
+                                        {char.image ? (
+                                            <img src={char.image} alt={char.name} className="token-image" />
+                                        ) : (
+                                            <div className={`token-placeholder ${char.type}`}>
+                                                {char.name[0].toUpperCase()}
+                                            </div>
+                                        )}
+
+                                        {/* Name and HP text below token */}
+                                        <div className="token-info">
+                                            {char.name} {char.type === 'ally' && `(${char.hp}/${char.maxHp} HP)`}
+                                        </div>
+
+                                        {/* Resize handle */}
+                                        <div
+                                            className="resize-handle"
+                                            onMouseDown={(e) => handleResizeStart(e, char)}
+                                        />
+                                    </div>
+                                </div>
+                                );
+                            })}
+                            </div>
+                        </div>
+
+                        {/* Floating Notes Window */}
+                        {notesVisible && (
+                            <div
+                                className="floating-notes"
+                                style={{
+                                    left: `${notesPosition.x}px`,
+                                    top: `${notesPosition.y}px`,
+                                    width: `${notesSize.width}px`,
+                                    height: `${notesSize.height}px`
+                                }}
+                            >
+                                <div
+                                    className="floating-notes-header"
+                                    onMouseDown={(e) => {
+                                        setIsDraggingNotes(true);
+                                        setNotesOffset({
+                                            x: e.clientX - notesPosition.x,
+                                            y: e.clientY - notesPosition.y
+                                        });
+                                    }}
+                                    onMouseMove={(e) => {
+                                        if (isDraggingNotes) {
+                                            setNotesPosition({
+                                                x: e.clientX - notesOffset.x,
+                                                y: e.clientY - notesOffset.y
+                                            });
+                                        }
+                                    }}
+                                    onMouseUp={() => setIsDraggingNotes(false)}
+                                >
+                                    <span>Battle Notes</span>
+                                    <span className="floating-notes-close" onClick={() => setNotesVisible(false)}>
+                                        ✕
+                                    </span>
+                                </div>
+                                <div className="floating-notes-content">
+                                    <textarea
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        placeholder="Take notes about the battle..."
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Context Menu (Right-click menu) */}
+                        {(() => {
+                            if (!contextMenu) return null;
+                            const currentChar = contextMenu.character;
+
+                            return (
+                            <div
+                                className="context-menu"
+                                style={{
+                                    left: `${contextMenu.x}px`,
+                                    top: `${contextMenu.y}px`
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="context-menu-header">{currentChar.name}</div>
+
+                                {/* Name and Image editing */}
+                                <div style={{ padding: '8px' }}>
+                                    <div
+                                        className="context-menu-item"
+                                        onClick={() => {
+                                            const newName = prompt('Enter new name:', currentChar.name);
+                                            if (newName) updateCharacter(currentChar.id, { name: newName });
+                                        }}
+                                    >
+                                        ✏️ Rename
+                                    </div>
+                                    <div className="context-menu-item">
+                                        <label htmlFor={`change-image-${currentChar.id}`} style={{ cursor: 'pointer', display: 'block', width: '100%' }}>
+                                            <input
+                                                type="file"
+                                                id={`change-image-${currentChar.id}`}
+                                                accept="image/*"
+                                                style={{ display: 'none' }}
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onload = (event) => {
+                                                            updateCharacter(currentChar.id, { image: event.target.result });
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                            />
+                                            🖼️ Change Image
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* Health Controls - only for allies */}
+                                {currentChar.type === 'ally' && (
+                                    <div style={{ padding: '8px' }}>
+                                        <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '6px' }}>
+                                            Health ({currentChar.hp}/{currentChar.maxHp} HP)
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px' }}>
+                                            <button className="hp-btn heal" onClick={() => adjustHP(currentChar, 0.25)}>
+                                                +0.25
+                                            </button>
+                                            <button className="hp-btn heal" onClick={() => adjustHP(currentChar, 0.5)}>
+                                                +0.5
+                                            </button>
+                                            <button className="hp-btn heal" onClick={() => adjustHP(currentChar, 1)}>
+                                                +1
+                                            </button>
+                                            <button className="hp-btn damage" onClick={() => adjustHP(currentChar, -0.25)}>
+                                                -0.25
+                                            </button>
+                                            <button className="hp-btn damage" onClick={() => adjustHP(currentChar, -0.5)}>
+                                                -0.5
+                                            </button>
+                                            <button className="hp-btn damage" onClick={() => adjustHP(currentChar, -1)}>
+                                                -1
+                                            </button>
+                                        </div>
+                                        <div style={{ marginTop: '6px' }}>
+                                            <input
+                                                type="number"
+                                                step="0.25"
+                                                placeholder="Set exact HP"
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '6px',
+                                                    background: 'rgba(0,0,0,0.5)',
+                                                    border: '1px solid #444',
+                                                    borderRadius: '4px',
+                                                    color: 'white',
+                                                    marginBottom: '4px'
+                                                }}
+                                                onKeyPress={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const value = parseFloat(e.target.value);
+                                                        if (!isNaN(value)) {
+                                                            updateCharacter(currentChar.id, { hp: Math.max(0, Math.min(currentChar.maxHp, value)) });
+                                                            e.target.value = '';
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                            <input
+                                                type="number"
+                                                step="0.25"
+                                                placeholder="Set max HP"
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '6px',
+                                                    background: 'rgba(0,0,0,0.5)',
+                                                    border: '1px solid #444',
+                                                    borderRadius: '4px',
+                                                    color: 'white'
+                                                }}
+                                                onKeyPress={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const value = parseFloat(e.target.value);
+                                                        if (!isNaN(value) && value > 0) {
+                                                            updateCharacter(currentChar.id, { maxHp: value });
+                                                            e.target.value = '';
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Damage Tracking - only for enemies */}
+                                {currentChar.type === 'enemy' && (
+                                <div style={{ padding: '4px' }}>
+                                    <div style={{ fontSize: '12px', color: '#aaa', padding: '8px 10px' }}>
+                                        Damage Tracking
+                                    </div>
+                                    <div style={{ padding: '8px 10px' }}>
+                                        <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
+                                            <input
+                                                type="number"
+                                                step="0.25"
+                                                placeholder="Add damage amount..."
+                                                id={`damage-input-${currentChar.id}`}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '6px',
+                                                    background: 'rgba(0,0,0,0.5)',
+                                                    border: '1px solid #444',
+                                                    borderRadius: '4px',
+                                                    color: 'white',
+                                                    fontSize: '12px'
+                                                }}
+                                                onKeyPress={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const input = e.target;
+                                                        const value = parseFloat(input.value);
+                                                        if (!isNaN(value) && value > 0) {
+                                                            const newLog = [...(currentChar.damageLog || []), value];
+                                                            updateCharacter(currentChar.id, { damageLog: newLog });
+                                                            input.value = '';
+                                                        }
+                                                    }
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                            <button
+                                                style={{
+                                                    padding: '6px 12px',
+                                                    background: '#ef4444',
+                                                    border: '1px solid #dc2626',
+                                                    borderRadius: '4px',
+                                                    color: 'white',
+                                                    cursor: 'pointer',
+                                                    fontSize: '12px',
+                                                    fontWeight: 'bold'
+                                                }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const input = document.getElementById(`damage-input-${currentChar.id}`);
+                                                    const value = parseFloat(input.value);
+                                                    if (!isNaN(value) && value > 0) {
+                                                        const newLog = [...(currentChar.damageLog || []), value];
+                                                        updateCharacter(currentChar.id, { damageLog: newLog });
+                                                        input.value = '';
+                                                    }
+                                                }}
+                                            >
+                                                Add
+                                            </button>
+                                        </div>
+                                        {currentChar.damageLog && currentChar.damageLog.length > 0 && (
+                                            <div style={{
+                                                maxHeight: '100px',
+                                                overflowY: 'auto',
+                                                background: 'rgba(0,0,0,0.3)',
+                                                padding: '6px',
+                                                borderRadius: '4px',
+                                                fontSize: '11px'
+                                            }}>
+                                                <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#fca5a5' }}>
+                                                    Damage History:
+                                                </div>
+                                                {currentChar.damageLog.map((dmg, idx) => (
+                                                    <div key={idx} className="damage-log-item">
+                                                        <span>Hit #{idx + 1}</span>
+                                                        <span>{dmg} damage</span>
+                                                    </div>
+                                                ))}
+                                                <div style={{
+                                                    marginTop: '6px',
+                                                    paddingTop: '6px',
+                                                    borderTop: '1px solid rgba(255,255,255,0.1)',
+                                                    fontWeight: 'bold',
+                                                    color: '#fca5a5'
+                                                }}>
+                                                    Total: {currentChar.damageLog.reduce((a, b) => a + b, 0)}
+                                                </div>
+                                                <button
+                                                    style={{
+                                                        marginTop: '6px',
+                                                        padding: '4px 8px',
+                                                        background: 'rgba(239, 68, 68, 0.3)',
+                                                        border: '1px solid #ef4444',
+                                                        borderRadius: '4px',
+                                                        color: 'white',
+                                                        cursor: 'pointer',
+                                                        fontSize: '11px',
+                                                        width: '100%'
+                                                    }}
+                                                    onClick={() => updateCharacter(currentChar.id, { damageLog: [] })}
+                                                >
+                                                    Clear History
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                )}
+
+                                {/* Status Effects */}
+                                <div style={{ padding: '4px' }}>
+                                    <div style={{ fontSize: '12px', color: '#aaa', padding: '8px 10px' }}>
+                                        Status Effects
+                                    </div>
+                                    {statusOptions.map(status => (
+                                        <div
+                                            key={status}
+                                            className="context-menu-item"
+                                            onClick={() => {
+                                                const hasStatus = currentChar.statuses.includes(status);
+                                                updateCharacter(currentChar.id, {
+                                                    statuses: hasStatus
+                                                        ? currentChar.statuses.filter(s => s !== status)
+                                                        : [...currentChar.statuses, status]
+                                                });
+                                            }}
+                                        >
+                                            <span style={{
+                                                width: '16px',
+                                                height: '16px',
+                                                border: '2px solid rgba(99, 102, 241, 0.5)',
+                                                borderRadius: '3px',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                marginRight: '8px',
+                                                background: currentChar.statuses.includes(status) ? '#6366f1' : 'transparent'
+                                            }}>
+                                                {currentChar.statuses.includes(status) && '✓'}
+                                            </span>
+                                            {status}
+                                        </div>
+                                    ))}
+                                    <div style={{ padding: '8px 10px' }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Add custom status..."
+                                            className="custom-status-input"
+                                            onKeyPress={(e) => {
+                                                if (e.key === 'Enter' && e.target.value.trim()) {
+                                                    updateCharacter(currentChar.id, {
+                                                        statuses: [...currentChar.statuses, e.target.value.trim()]
+                                                    });
+                                                    e.target.value = '';
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Mark as Dead / Delete */}
+                                <div style={{ padding: '4px' }}>
+                                    <div
+                                        className="context-menu-item"
+                                        onClick={() => updateCharacter(currentChar.id, { isDead: !currentChar.isDead })}
+                                    >
+                                        {currentChar.isDead ? '❤️ Revive' : '💀 Mark as Dead'}
+                                    </div>
+                                    <div
+                                        className="context-menu-item danger"
+                                        onClick={() => {
+                                            if (confirm(`Remove ${currentChar.name} from battle?`)) {
+                                                saveHistory();
+                                                setCharacters(characters.filter(c => c.id !== currentChar.id));
+                                            }
+                                        }}
+                                    >
+                                        🗑️ Delete from Battle
+                                    </div>
+                                </div>
+                            </div>
+                            );
+                        })()}
+                    </div>
+
+                    {/* INITIATIVE BAR (Bottom) */}
+                    <div className={`initiative-bottom ${!sidebarVisible ? 'sidebar-hidden' : ''}`}>
+                        <div className="initiative-bottom-title">Initiative Order</div>
+                        <div className="initiative-scroll-container">
+                            {sortedByInitiative.length === 0 ? (
+                                <div style={{ padding: '10px', color: '#888', fontSize: '13px' }}>
+                                    No characters yet. Add some to start!
+                                </div>
+                            ) : (
+                                sortedByInitiative.map((char, index) => (
+                                    <div
+                                        key={char.id}
+                                        className={`initiative-card ${char.type} ${index === currentTurn ? 'current-turn' : ''}`}
+                                        draggable
+                                        onClick={() => setCurrentTurn(index)}
+                                    >
+                                        <div className="initiative-portrait">
+                                            {char.image ? (
+                                                <img src={char.image} alt={char.name} />
+                                            ) : (
+                                                <div className="placeholder">{char.name[0].toUpperCase()}</div>
+                                            )}
+                                        </div>
+                                        <div className="initiative-name">{char.name}</div>
+                                        {char.type === 'ally' && (
+                                            <div className="initiative-hp">{char.hp}/{char.maxHp} HP</div>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

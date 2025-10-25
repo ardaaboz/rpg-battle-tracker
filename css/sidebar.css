@@ -1,0 +1,238 @@
+/**
+ * Velutan Battle Tracker - Sidebar Styles
+ *
+ * This file contains all sidebar-related styles including:
+ * - Sidebar layout and positioning
+ * - Sidebar toggle button
+ * - Form inputs and sections
+ * - Character list
+ * - File upload components
+ */
+
+/* ==================== Sidebar Container ==================== */
+/**
+ * Fixed sidebar on the left side of the screen
+ * Can be hidden/shown with toggle button
+ * Uses transform for smooth slide animation
+ */
+.sidebar {
+    width: 320px;
+    background: rgba(20, 20, 30, 0.95);
+    padding: 20px;
+    overflow-y: auto;
+    border-right: 2px solid #444;
+    box-shadow: 4px 0 10px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+}
+
+.sidebar.hidden {
+    transform: translateX(-100%);
+}
+
+/* ==================== Sidebar Toggle Button ==================== */
+/**
+ * Hamburger menu button to show/hide sidebar
+ * Position adjusts based on sidebar visibility
+ */
+.sidebar-toggle {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(99, 102, 241, 0.9);
+    border: 2px solid rgba(99, 102, 241, 1);
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    color: white;
+    padding: 12px 10px;
+    cursor: pointer;
+    z-index: 2000;
+    font-size: 24px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-toggle:hover {
+    background: rgba(99, 102, 241, 1);
+    padding-right: 14px;
+}
+
+.sidebar-toggle.sidebar-visible {
+    left: 320px;
+}
+
+/* ==================== Sidebar Sections ==================== */
+/**
+ * Grouped sections within sidebar (e.g., Add Character, Background, etc.)
+ */
+.section {
+    margin-bottom: 25px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #a78bfa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ==================== Form Inputs ==================== */
+/**
+ * Input groups for forms (label + input field)
+ */
+.input-group {
+    margin-bottom: 12px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #bbb;
+    font-weight: 500;
+}
+
+.input-group input,
+.input-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+    font-size: 14px;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+/* ==================== Buttons ==================== */
+/**
+ * Button styles for actions in sidebar
+ */
+.btn {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    width: 100%;
+    margin-bottom: 8px;
+    font-size: 14px;
+    display: block;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+
+/* ==================== File Upload ==================== */
+/**
+ * Custom styled file upload inputs
+ */
+.file-input-wrapper {
+    position: relative;
+    overflow: hidden;
+    display: block;
+    width: 100%;
+}
+
+.file-input-wrapper input[type=file] {
+    position: absolute;
+    left: -9999px;
+}
+
+.file-input-label {
+    display: block;
+    padding: 10px;
+    background: rgba(99, 102, 241, 0.2);
+    border: 2px dashed rgba(99, 102, 241, 0.5);
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.file-input-label:hover {
+    background: rgba(99, 102, 241, 0.3);
+    border-color: #6366f1;
+}
+
+/* ==================== Character List ==================== */
+/**
+ * List of all characters in the battle
+ */
+.character-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.character-item {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+/* ==================== Notes Area ==================== */
+/**
+ * Textarea for battle notes in sidebar
+ */
+.notes-area {
+    width: 100%;
+    min-height: 100px;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+}

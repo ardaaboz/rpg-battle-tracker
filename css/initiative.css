@@ -1,0 +1,267 @@
+/**
+ * Velutan Battle Tracker - Initiative Bar Styles
+ *
+ * This file contains all initiative order bar styles including:
+ * - Initiative bar container
+ * - Initiative cards
+ * - Drag and drop functionality
+ * - Current turn highlighting
+ * - Scrollable container
+ */
+
+/* ==================== Initiative Bar Container ==================== */
+/**
+ * Fixed bar at bottom of screen showing turn order
+ * Adjusts position when sidebar is hidden
+ * Scrollable horizontally when too many characters
+ */
+.initiative-bottom {
+    position: fixed;
+    bottom: 0;
+    left: 320px; /* Matches sidebar width */
+    right: 0;
+    background: rgba(20, 20, 30, 0.95);
+    border-top: 2px solid #444;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 1000;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    transition: left 0.3s ease;
+}
+
+.initiative-bottom.sidebar-hidden {
+    left: 0;
+}
+
+/* ==================== Initiative Title ==================== */
+/**
+ * "Initiative Order" label on the left
+ */
+.initiative-bottom-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #a78bfa;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ==================== Scroll Container ==================== */
+/**
+ * Horizontally scrollable container for initiative cards
+ * Right-to-left order (highest initiative on right)
+ */
+.initiative-scroll-container {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    flex: 1;
+    align-items: center;
+    padding: 5px 0;
+}
+
+.initiative-scroll-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.initiative-scroll-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.initiative-scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.5);
+    border-radius: 3px;
+}
+
+/* ==================== Initiative Cards ==================== */
+/**
+ * Individual character cards in initiative order
+ * Shows portrait, name, and HP
+ * Draggable to reorder
+ */
+.initiative-card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 8px;
+    min-width: 120px;
+    cursor: grab;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.initiative-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+.initiative-card.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.initiative-card.drag-over {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.2);
+}
+
+/* ==================== Current Turn Highlighting ==================== */
+/**
+ * Special styling for character whose turn it is
+ * Pulsing glow effect
+ */
+.initiative-card.current-turn {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.9);
+    }
+}
+
+/* ==================== Character Type Indicators ==================== */
+/**
+ * Border colors for different character types in initiative
+ */
+.initiative-card.ally {
+    border-left: 4px solid #10b981;
+}
+
+.initiative-card.enemy {
+    border-left: 4px solid #ef4444;
+}
+
+.initiative-card.neutral {
+    border-left: 4px solid #fbbf24;
+}
+
+/* ==================== Initiative Portrait ==================== */
+/**
+ * Small circular portrait in initiative card
+ */
+.initiative-portrait {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin: 0 auto 6px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    overflow: hidden;
+}
+
+.initiative-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.initiative-portrait.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(50, 50, 70, 0.9);
+    font-size: 20px;
+    font-weight: bold;
+}
+
+/* ==================== Initiative Info ==================== */
+/**
+ * Name and HP text in initiative card
+ */
+.initiative-name {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.initiative-hp {
+    font-size: 11px;
+    color: #888;
+}
+
+/* ==================== Floating Notes Window ==================== */
+/**
+ * Draggable/resizable notes window
+ * Can be positioned anywhere on battlefield
+ */
+.floating-notes {
+    position: fixed;
+    background: rgba(20, 20, 30, 0.95);
+    border: 2px solid rgba(99, 102, 241, 0.5);
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    z-index: 5000;
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+    min-height: 150px;
+    backdrop-filter: blur(10px);
+}
+
+.floating-notes-header {
+    padding: 10px 12px;
+    background: rgba(99, 102, 241, 0.2);
+    cursor: move;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+    font-size: 13px;
+    color: #a78bfa;
+}
+
+.floating-notes-close {
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.floating-notes-close:hover {
+    background: rgba(239, 68, 68, 0.3);
+}
+
+.floating-notes-content {
+    flex: 1;
+    padding: 12px;
+    overflow: auto;
+}
+
+.floating-notes-content textarea {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: white;
+    font-family: inherit;
+    font-size: 13px;
+    resize: none;
+    outline: none;
+}
+
+/* Resize indicator in bottom-right corner */
+.floating-notes::after {
+    content: '⋰';
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.3);
+    pointer-events: none;
+    line-height: 1;
+}

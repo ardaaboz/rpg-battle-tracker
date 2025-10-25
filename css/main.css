@@ -1,0 +1,51 @@
+/**
+ * Velutan Battle Tracker - Main Styles
+ *
+ * This file contains global styles, resets, and base layout.
+ * Includes: CSS reset, body styles, app container, scrollbar customization
+ */
+
+/* ==================== CSS Reset ==================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ==================== Body & Root Styles ==================== */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+}
+
+/* ==================== App Container ==================== */
+/**
+ * Main application container using flexbox
+ * Sidebar is fixed, battlefield-container takes remaining space
+ */
+.app-container {
+    display: flex;
+    height: 100vh;
+}
+
+/* ==================== Custom Scrollbar ==================== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.5);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.7);
+}

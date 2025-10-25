@@ -1,0 +1,165 @@
+/**
+ * Velutan Battle Tracker - Context Menu Styles
+ *
+ * This file contains all context menu (right-click menu) styles including:
+ * - Menu container and positioning
+ * - Menu items and sections
+ * - HP controls
+ * - Damage tracking
+ * - Status effects controls
+ */
+
+/* ==================== Context Menu Container ==================== */
+/**
+ * Right-click menu for character actions
+ * Positioned absolutely based on click coordinates
+ * Smart positioning prevents overflow off screen
+ */
+.context-menu {
+    position: fixed;
+    background: rgba(15, 15, 25, 0.98);
+    border: 2px solid rgba(99, 102, 241, 0.5);
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    z-index: 10000;
+    min-width: 240px;
+    max-width: 280px;
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+}
+
+/* ==================== Menu Header ==================== */
+/**
+ * Top section of menu showing character name
+ */
+.context-menu-header {
+    background: rgba(99, 102, 241, 0.2);
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: bold;
+    font-size: 15px;
+    color: #a78bfa;
+}
+
+/* ==================== Menu Items ==================== */
+/**
+ * Clickable items in the context menu
+ */
+.context-menu-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.context-menu-item:hover {
+    background: rgba(99, 102, 241, 0.3);
+}
+
+.context-menu-item.danger:hover {
+    background: rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+}
+
+/* ==================== HP Controls ==================== */
+/**
+ * HP adjustment buttons for allies
+ * Grid layout with heal/damage buttons
+ */
+.hp-btn {
+    padding: 8px;
+    border: 1px solid;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.hp-btn.heal {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #6ee7b7;
+}
+
+.hp-btn.heal:hover {
+    background: rgba(16, 185, 129, 0.4);
+    transform: translateY(-1px);
+}
+
+.hp-btn.damage {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #fca5a5;
+}
+
+.hp-btn.damage:hover {
+    background: rgba(239, 68, 68, 0.4);
+    transform: translateY(-1px);
+}
+
+/* ==================== Damage Tracking ==================== */
+/**
+ * Damage log for enemies
+ * Shows individual damage instances
+ */
+.damage-log-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 11px;
+    color: #fca5a5;
+}
+
+.damage-log-item:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ==================== Status Effects Section ==================== */
+/**
+ * Status effect toggles in context menu
+ */
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-size: 12px;
+}
+
+.status-checkbox {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(99, 102, 241, 0.5);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.status-checkbox.checked {
+    background: #6366f1;
+    border-color: #6366f1;
+}
+
+/* ==================== Custom Status Input ==================== */
+/**
+ * Input field for adding custom status effects
+ */
+.custom-status-input {
+    width: 100%;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: white;
+    font-size: 12px;
+}
+
+.custom-status-input:focus {
+    outline: none;
+    border-color: #6366f1;
+}
