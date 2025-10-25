@@ -198,7 +198,9 @@
                 type: 'ally',
                 hp: '',
                 maxHp: '',
-                image: ''
+                image: '',
+                structureIcon: '🏰',
+                structureColor: '#8b5cf6'
             });
 
             // Ref for battlefield DOM element
@@ -952,8 +954,7 @@
                                         left: `${char.x}px`,
                                         top: `${char.y}px`,
                                         width: `${char.size}px`,
-                                        height: `${char.size}px`,
-                                        fontSize: `${char.size}px` // Base font size for em units
+                                        height: `${char.size}px`
                                     }}
                                     onMouseDown={(e) => handleMouseDown(e, char)}
                                     onContextMenu={(e) => handleRightClick(e, char)}
@@ -1763,27 +1764,33 @@
 
                                             saveHistory();
 
-                                            // Reorder characters
-                                            const newChars = [...characters];
-                                            const draggedChar = sortedByInitiative[draggedInitiativeIndex];
-                                            const targetChar = sortedByInitiative[index];
+                                            // Get all characters with initiatives in sorted order
+                                            const sorted = [...sortedByInitiative];
 
-                                            // Find actual indices in characters array
-                                            const draggedIdx = newChars.findIndex(c => c.id === draggedChar.id);
-                                            const targetIdx = newChars.findIndex(c => c.id === targetChar.id);
+                                            // Remove dragged character and insert at new position
+                                            const [draggedChar] = sorted.splice(draggedInitiativeIndex, 1);
+                                            sorted.splice(index, 0, draggedChar);
 
-                                            // Swap initiative values
-                                            const tempInit = newChars[draggedIdx].initiative;
-                                            newChars[draggedIdx].initiative = newChars[targetIdx].initiative;
-                                            newChars[targetIdx].initiative = tempInit;
+                                            // Reassign initiative values based on new order
+                                            // Higher index = higher initiative
+                                            const newChars = characters.map(char => {
+                                                const newIndex = sorted.findIndex(c => c.id === char.id);
+                                                if (newIndex !== -1) {
+                                                    // Reverse the index so first in array has highest initiative
+                                                    return { ...char, initiative: sorted.length - newIndex };
+                                                }
+                                                return char;
+                                            });
 
                                             setCharacters(newChars);
 
-                                            // Adjust current turn if needed
+                                            // Update current turn to follow the moved character
                                             if (currentTurn === draggedInitiativeIndex) {
                                                 setCurrentTurn(index);
-                                            } else if (currentTurn === index) {
-                                                setCurrentTurn(draggedInitiativeIndex);
+                                            } else if (draggedInitiativeIndex < currentTurn && index >= currentTurn) {
+                                                setCurrentTurn(currentTurn - 1);
+                                            } else if (draggedInitiativeIndex > currentTurn && index <= currentTurn) {
+                                                setCurrentTurn(currentTurn + 1);
                                             }
 
                                             setDraggedInitiativeIndex(null);
