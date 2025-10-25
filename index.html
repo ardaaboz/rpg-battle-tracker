@@ -199,7 +199,7 @@
                 hp: '',
                 maxHp: '',
                 image: '',
-                structureIcon: '🏰',
+                structureIcon: 'castle',
                 structureColor: '#8b5cf6'
             });
 
@@ -208,6 +208,26 @@
 
             // Predefined status effects - reduced to 3
             const statusOptions = ['Stunned', 'Poisoned', 'Blessed'];
+
+            // SVG Icons for structures (can be colored dynamically)
+            const structureIcons = {
+                castle: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 19h18V9H3v10zm0-12h2V3H3v4zM7 7h2V3H7v4zm4 0h2V3h-2v4zm4 0h2V3h-2v4zm4 0h2V3h-2v4z"/></svg>',
+                tower: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5h14v14h-4v-6h-6v6H5V5zm2 2v10h2v-4h6v4h2V7H7z"/></svg>',
+                tree: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L8 9h2v2H6l4 6h2v4h4v-4h2l4-6h-4v-2h2l-4-6z"/></svg>',
+                rock: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 8l2 10 6 4 6-4 2-10-8-6zm0 2.5L17.5 8 16 16l-4 2.5L8 16 6.5 8 12 4.5z"/></svg>',
+                wall: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="8" width="20" height="8" rx="1"/></svg>',
+                mountain: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 6l-4.5 7L7 9l-5 9h20L14 6z"/></svg>',
+                gate: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h4v16H4V4zm12 0h4v16h-4V4zM10 8h4v3h-4V8zm0 5h4v3h-4v-3z"/></svg>',
+                fire: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-1.1 3.7-3.5 5-3.5 8.5 0 3.3 2.7 6 6 6s6-2.7 6-6c0-3.5-2.4-4.8-3.5-8.5-.5 1.8-1.5 3-3 3s-2.5-1.2-3-3z"/></svg>',
+                shield: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 6v6c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V6l-8-4z"/></svg>',
+                sword: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.92 5L5 6.92l7.08 7.08-2.83 2.83 1.41 1.41L13.5 15.5l1.77 1.77 1.41-1.41-1.77-1.77 2.83-2.83-7.08-7.08L9.75 5.91 12 8.17 9.75 10.42 7.5 8.17 6.92 5z"/></svg>',
+                gem: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2l-2 7h16l-2-7H6zm-2 9l8 11 8-11H4z"/></svg>',
+                crate: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 12h16M12 4v16" stroke="currentColor" fill="none" stroke-width="1.5"/></svg>',
+                door: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="3" width="10" height="18" rx="1"/><circle cx="15" cy="12" r="1"/></svg>',
+                ruins: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 20h3v-7h3V7h3v6h3v7h3V3H5v17zm2-15h10v2H7V5z"/></svg>',
+                statue: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C10.9 2 10 2.9 10 4s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-1 6v5l-3 2v7h2v-5l2-1.5 2 1.5v5h2v-7l-3-2V8h-2z"/></svg>',
+                water: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5c-3.9 3.9-7 7.8-7 11.5 0 3.9 3.1 7 7 7s7-3.1 7-7c0-3.7-3.1-7.6-7-11.5z"/></svg>'
+            };
 
             // ========== CHARACTER MANAGEMENT ==========
 
@@ -258,17 +278,8 @@
                 // Auto-generate name for structures based on icon
                 let characterName = formData.name;
                 if (formData.type === 'structure') {
-                    const iconMap = {
-                        '🏰': 'Castle',
-                        '🏛️': 'Temple',
-                        '🗿': 'Statue',
-                        '🌲': 'Tree',
-                        '🪨': 'Boulder',
-                        '🔥': 'Fire',
-                        '💀': 'Skull',
-                        '⚔️': 'Sword'
-                    };
-                    characterName = iconMap[formData.structureIcon] || 'Structure';
+                    // Capitalize first letter
+                    characterName = formData.structureIcon.charAt(0).toUpperCase() + formData.structureIcon.slice(1);
                 }
 
                 const newChar = {
@@ -299,7 +310,7 @@
                     hp: '',
                     maxHp: '',
                     image: '',
-                    structureIcon: '🏰',
+                    structureIcon: 'castle',
                     structureColor: '#8b5cf6'
                 });
             };
@@ -688,34 +699,25 @@
                                     <div className="input-group">
                                         <label>Icon</label>
                                         <select
-                                            value={formData.structureIcon || '🏰'}
+                                            value={formData.structureIcon || 'castle'}
                                             onChange={(e) => setFormData({ ...formData, structureIcon: e.target.value })}
                                         >
-                                            <option value="🏰">🏰 Castle</option>
-                                            <option value="🏛️">🏛️ Temple</option>
-                                            <option value="🗿">🗿 Statue</option>
-                                            <option value="🌲">🌲 Tree</option>
-                                            <option value="🪨">🪨 Rock</option>
-                                            <option value="⛰️">⛰️ Mountain</option>
-                                            <option value="🌋">🌋 Volcano</option>
-                                            <option value="🏔️">🏔️ Snow Mountain</option>
-                                            <option value="🗼">🗼 Tower</option>
-                                            <option value="🕌">🕌 Dome</option>
-                                            <option value="⛩️">⛩️ Gate</option>
-                                            <option value="🛖">🛖 Hut</option>
-                                            <option value="🏚️">🏚️ Ruins</option>
-                                            <option value="🪵">🪵 Log</option>
-                                            <option value="🧱">🧱 Wall</option>
-                                            <option value="🚪">🚪 Door</option>
-                                            <option value="🪟">🪟 Window</option>
-                                            <option value="⚔️">⚔️ Crossed Swords</option>
-                                            <option value="🛡️">🛡️ Shield</option>
-                                            <option value="💎">💎 Gem</option>
-                                            <option value="📦">📦 Crate</option>
-                                            <option value="⚰️">⚰️ Coffin</option>
-                                            <option value="🔥">🔥 Fire</option>
-                                            <option value="💧">💧 Water</option>
-                                            <option value="⚡">⚡ Lightning</option>
+                                            <option value="castle">Castle</option>
+                                            <option value="tower">Tower</option>
+                                            <option value="tree">Tree</option>
+                                            <option value="rock">Rock</option>
+                                            <option value="wall">Wall</option>
+                                            <option value="mountain">Mountain</option>
+                                            <option value="gate">Gate</option>
+                                            <option value="ruins">Ruins</option>
+                                            <option value="door">Door</option>
+                                            <option value="statue">Statue</option>
+                                            <option value="shield">Shield</option>
+                                            <option value="sword">Sword</option>
+                                            <option value="gem">Gem</option>
+                                            <option value="crate">Crate</option>
+                                            <option value="fire">Fire</option>
+                                            <option value="water">Water</option>
                                         </select>
                                     </div>
                                     <div className="input-group">
@@ -1062,11 +1064,13 @@
                                                 className="token-placeholder structure"
                                                 style={{
                                                     borderColor: char.structureColor || '#8b5cf6',
-                                                    boxShadow: `0 0 20px ${char.structureColor || '#8b5cf6'}80, inset 0 0 20px ${char.structureColor || '#8b5cf6'}30`
+                                                    boxShadow: `0 0 20px ${char.structureColor || '#8b5cf6'}80, inset 0 0 20px ${char.structureColor || '#8b5cf6'}30`,
+                                                    color: char.structureColor || '#8b5cf6'
                                                 }}
-                                            >
-                                                {char.structureIcon || '🏰'}
-                                            </div>
+                                                dangerouslySetInnerHTML={{
+                                                    __html: structureIcons[char.structureIcon] || structureIcons.castle
+                                                }}
+                                            />
                                         ) : char.image ? (
                                             <img src={char.image} alt={char.name} className="token-image" />
                                         ) : (
@@ -1075,10 +1079,12 @@
                                             </div>
                                         )}
 
-                                        {/* Name and HP text below token */}
-                                        <div className="token-info">
-                                            {char.name} {char.type === 'ally' && `(${char.hp}/${char.maxHp} HP)`}
-                                        </div>
+                                        {/* Name and HP text below token - hide for structures */}
+                                        {char.type !== 'structure' && (
+                                            <div className="token-info">
+                                                {char.name} {char.type === 'ally' && `(${char.hp}/${char.maxHp} HP)`}
+                                            </div>
+                                        )}
 
                                         {/* Resize handle */}
                                         <div
@@ -1413,7 +1419,7 @@
                                                 <label htmlFor={`structure-icon-${currentChar.id}`} style={{ cursor: 'pointer', display: 'block', width: '100%' }}>
                                                     <select
                                                         id={`structure-icon-${currentChar.id}`}
-                                                        value={currentChar.structureIcon || '🏰'}
+                                                        value={currentChar.structureIcon || 'castle'}
                                                         onChange={(e) => {
                                                             updateCharacter(currentChar.id, { structureIcon: e.target.value });
                                                         }}
@@ -1426,31 +1432,22 @@
                                                         }}
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
-                                                        <option value="🏰">🏰 Castle</option>
-                                                        <option value="🏛️">🏛️ Temple</option>
-                                                        <option value="🗿">🗿 Statue</option>
-                                                        <option value="🌲">🌲 Tree</option>
-                                                        <option value="🪨">🪨 Rock</option>
-                                                        <option value="⛰️">⛰️ Mountain</option>
-                                                        <option value="🌋">🌋 Volcano</option>
-                                                        <option value="🏔️">🏔️ Snow Mountain</option>
-                                                        <option value="🗼">🗼 Tower</option>
-                                                        <option value="🕌">🕌 Dome</option>
-                                                        <option value="⛩️">⛩️ Gate</option>
-                                                        <option value="🛖">🛖 Hut</option>
-                                                        <option value="🏚️">🏚️ Ruins</option>
-                                                        <option value="🪵">🪵 Log</option>
-                                                        <option value="🧱">🧱 Wall</option>
-                                                        <option value="🚪">🚪 Door</option>
-                                                        <option value="🪟">🪟 Window</option>
-                                                        <option value="⚔️">⚔️ Crossed Swords</option>
-                                                        <option value="🛡️">🛡️ Shield</option>
-                                                        <option value="💎">💎 Gem</option>
-                                                        <option value="📦">📦 Crate</option>
-                                                        <option value="⚰️">⚰️ Coffin</option>
-                                                        <option value="🔥">🔥 Fire</option>
-                                                        <option value="💧">💧 Water</option>
-                                                        <option value="⚡">⚡ Lightning</option>
+                                                        <option value="castle">Castle</option>
+                                                        <option value="tower">Tower</option>
+                                                        <option value="tree">Tree</option>
+                                                        <option value="rock">Rock</option>
+                                                        <option value="wall">Wall</option>
+                                                        <option value="mountain">Mountain</option>
+                                                        <option value="gate">Gate</option>
+                                                        <option value="ruins">Ruins</option>
+                                                        <option value="door">Door</option>
+                                                        <option value="statue">Statue</option>
+                                                        <option value="shield">Shield</option>
+                                                        <option value="sword">Sword</option>
+                                                        <option value="gem">Gem</option>
+                                                        <option value="crate">Crate</option>
+                                                        <option value="fire">Fire</option>
+                                                        <option value="water">Water</option>
                                                     </select>
                                                 </label>
                                             </div>
