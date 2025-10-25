@@ -206,8 +206,8 @@
             // Ref for battlefield DOM element
             const battlefieldRef = useRef(null);
 
-            // Predefined status effects
-            const statusOptions = ['Stunned', 'Poisoned', 'Blessed', 'Cursed', 'Invisible', 'Prone'];
+            // Predefined status effects - reduced to 3
+            const statusOptions = ['Stunned', 'Poisoned', 'Blessed'];
 
             // ========== CHARACTER MANAGEMENT ==========
 
@@ -954,7 +954,8 @@
                                         left: `${char.x}px`,
                                         top: `${char.y}px`,
                                         width: `${char.size}px`,
-                                        height: `${char.size}px`
+                                        height: `${char.size}px`,
+                                        fontSize: `${char.size}px` // Base size for em units in children
                                     }}
                                     onMouseDown={(e) => handleMouseDown(e, char)}
                                     onContextMenu={(e) => handleRightClick(e, char)}
@@ -1475,53 +1476,6 @@
                                                 -1
                                             </button>
                                         </div>
-                                        <div style={{ marginTop: '6px' }}>
-                                            <input
-                                                type="number"
-                                                step="0.25"
-                                                placeholder="Set exact HP"
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '6px',
-                                                    background: 'rgba(0,0,0,0.5)',
-                                                    border: '1px solid #444',
-                                                    borderRadius: '4px',
-                                                    color: 'white',
-                                                    marginBottom: '4px'
-                                                }}
-                                                onKeyPress={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        const value = parseFloat(e.target.value);
-                                                        if (!isNaN(value)) {
-                                                            updateCharacter(currentChar.id, { hp: Math.max(0, Math.min(currentChar.maxHp, value)) });
-                                                            e.target.value = '';
-                                                        }
-                                                    }
-                                                }}
-                                            />
-                                            <input
-                                                type="number"
-                                                step="0.25"
-                                                placeholder="Set max HP"
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '6px',
-                                                    background: 'rgba(0,0,0,0.5)',
-                                                    border: '1px solid #444',
-                                                    borderRadius: '4px',
-                                                    color: 'white'
-                                                }}
-                                                onKeyPress={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        const value = parseFloat(e.target.value);
-                                                        if (!isNaN(value) && value > 0) {
-                                                            updateCharacter(currentChar.id, { maxHp: value });
-                                                            e.target.value = '';
-                                                        }
-                                                    }
-                                                }}
-                                            />
-                                        </div>
                                     </div>
                                 )}
 
@@ -1639,11 +1593,13 @@
                                     <div style={{ fontSize: '12px', color: '#aaa', padding: '8px 10px' }}>
                                         Status Effects
                                     </div>
+                                    {/* Show predefined status effects */}
                                     {statusOptions.map(status => (
                                         <div
                                             key={status}
                                             className="context-menu-item"
                                             onClick={() => {
+                                                saveHistory();
                                                 const hasStatus = currentChar.statuses.includes(status);
                                                 updateCharacter(currentChar.id, {
                                                     statuses: hasStatus
@@ -1668,6 +1624,35 @@
                                             {status}
                                         </div>
                                     ))}
+
+                                    {/* Show custom status effects with ability to remove */}
+                                    {currentChar.statuses.filter(s => !statusOptions.includes(s)).map(status => (
+                                        <div
+                                            key={status}
+                                            className="context-menu-item"
+                                            onClick={() => {
+                                                saveHistory();
+                                                updateCharacter(currentChar.id, {
+                                                    statuses: currentChar.statuses.filter(s => s !== status)
+                                                });
+                                            }}
+                                        >
+                                            <span style={{
+                                                width: '16px',
+                                                height: '16px',
+                                                border: '2px solid rgba(99, 102, 241, 0.5)',
+                                                borderRadius: '3px',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                marginRight: '8px',
+                                                background: '#6366f1'
+                                            }}>
+                                                ✓
+                                            </span>
+                                            {status} (Custom)
+                                        </div>
+                                    ))}
                                     <div style={{ padding: '8px 10px' }}>
                                         <input
                                             type="text"
@@ -1675,6 +1660,7 @@
                                             className="custom-status-input"
                                             onKeyPress={(e) => {
                                                 if (e.key === 'Enter' && e.target.value.trim()) {
+                                                    saveHistory();
                                                     updateCharacter(currentChar.id, {
                                                         statuses: [...currentChar.statuses, e.target.value.trim()]
                                                     });
