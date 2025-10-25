@@ -172,7 +172,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.5em; /* 50% of token size */
+    font-size: calc(var(--token-size, 80px) * 0.5); /* 50% of token size */
     font-weight: bold;
     border: 6px solid;
     background: rgba(50, 50, 70, 0.9);
@@ -225,16 +225,17 @@
  */
 .token-info {
     position: absolute;
-    bottom: -20%;
+    bottom: calc(var(--token-size, 80px) * -0.5); /* 50% of token size below */
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.9);
-    padding: 0.05em 0.15em;
-    border-radius: 0.1em;
+    padding: 4px 8px;
+    border-radius: 4px;
     white-space: nowrap;
-    font-size: 0.18em; /* 18% of token size */
+    font-size: calc(var(--token-size, 80px) * 0.175); /* 17.5% of token size */
     font-weight: 600;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    min-font-size: 10px;
 }
 
 /* ==================== Status Effects ==================== */
@@ -245,18 +246,18 @@
  */
 .status-effects {
     position: absolute;
-    top: -30%;
+    top: calc(var(--token-size, 80px) * -0.45); /* 45% of token size above */
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 0.03em;
+    gap: 3px;
 }
 
 .status-badge {
     background: rgba(0, 0, 0, 0.8);
-    padding: 0.02em 0.06em;
-    border-radius: 0.08em;
-    font-size: 0.13em; /* 13% of token size */
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: calc(var(--token-size, 80px) * 0.15); /* 15% of token size */
     border: 1px solid;
 }
 

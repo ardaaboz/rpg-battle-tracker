@@ -955,7 +955,7 @@
                                         top: `${char.y}px`,
                                         width: `${char.size}px`,
                                         height: `${char.size}px`,
-                                        fontSize: `${char.size}px` // Base size for em units in children
+                                        '--token-size': `${char.size}px` // CSS variable for scaling
                                     }}
                                     onMouseDown={(e) => handleMouseDown(e, char)}
                                     onContextMenu={(e) => handleRightClick(e, char)}
@@ -1650,24 +1650,53 @@
                                             }}>
                                                 ✓
                                             </span>
-                                            {status} (Custom)
+                                            {status}
                                         </div>
                                     ))}
                                     <div style={{ padding: '8px 10px' }}>
-                                        <input
-                                            type="text"
-                                            placeholder="Add custom status..."
-                                            className="custom-status-input"
-                                            onKeyPress={(e) => {
-                                                if (e.key === 'Enter' && e.target.value.trim()) {
-                                                    saveHistory();
-                                                    updateCharacter(currentChar.id, {
-                                                        statuses: [...currentChar.statuses, e.target.value.trim()]
-                                                    });
-                                                    e.target.value = '';
-                                                }
-                                            }}
-                                        />
+                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                            <input
+                                                type="text"
+                                                id={`custom-status-${currentChar.id}`}
+                                                placeholder="Add custom status..."
+                                                className="custom-status-input"
+                                                style={{ flex: 1 }}
+                                                onKeyPress={(e) => {
+                                                    if (e.key === 'Enter' && e.target.value.trim()) {
+                                                        saveHistory();
+                                                        updateCharacter(currentChar.id, {
+                                                            statuses: [...currentChar.statuses, e.target.value.trim()]
+                                                        });
+                                                        e.target.value = '';
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                style={{
+                                                    padding: '6px 12px',
+                                                    background: '#6366f1',
+                                                    border: '1px solid #5558e3',
+                                                    borderRadius: '4px',
+                                                    color: 'white',
+                                                    cursor: 'pointer',
+                                                    fontSize: '12px',
+                                                    fontWeight: 'bold'
+                                                }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const input = document.getElementById(`custom-status-${currentChar.id}`);
+                                                    if (input.value.trim()) {
+                                                        saveHistory();
+                                                        updateCharacter(currentChar.id, {
+                                                            statuses: [...currentChar.statuses, input.value.trim()]
+                                                        });
+                                                        input.value = '';
+                                                    }
+                                                }}
+                                            >
+                                                Add
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
