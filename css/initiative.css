@@ -37,8 +37,7 @@
 
 /* ==================== Initiative Title ==================== */
 /**
- * "Initiative Order" label on the left with Next Turn button
- * Flex layout to position button next to title
+ * "Initiative Order" label on the left
  */
 .initiative-bottom-title {
     font-size: 14px;
@@ -47,9 +46,6 @@
     white-space: nowrap;
     text-transform: uppercase;
     letter-spacing: 1px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
 }
 
 /* ==================== Scroll Container ==================== */
@@ -95,6 +91,11 @@
     cursor: grab;
     transition: all 0.2s;
     text-align: center;
+    position: relative;
+}
+
+.initiative-card:hover .initiative-delete-btn {
+    opacity: 1 !important;
 }
 
 .initiative-card:hover {

@@ -260,7 +260,11 @@
                     size: 80,
                     isDead: false,
                     statuses: [],
-                    damageLog: []
+                    damageLog: [],
+                    ...(formData.type === 'structure' && {
+                        structureIcon: formData.structureIcon || '🏰',
+                        structureColor: formData.structureColor || '#8b5cf6'
+                    })
                 };
 
                 saveHistory();
@@ -714,20 +718,22 @@
                                     </div>
                                 </div>
                             )}
-                            <div className="input-group">
-                                <label>Image (optional)</label>
-                                <div className="file-input-wrapper">
-                                    <input
-                                        type="file"
-                                        id="charImage"
-                                        accept="image/*"
-                                        onChange={handleImageUpload}
-                                    />
-                                    <label htmlFor="charImage" className="file-input-label">
-                                        {formData.image ? '✓ Image Selected' : '🖼️ Upload Image'}
-                                    </label>
+                            {formData.type !== 'structure' && (
+                                <div className="input-group">
+                                    <label>Image (optional)</label>
+                                    <div className="file-input-wrapper">
+                                        <input
+                                            type="file"
+                                            id="charImage"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                        />
+                                        <label htmlFor="charImage" className="file-input-label">
+                                            {formData.image ? '✓ Image Selected' : '🖼️ Upload Image'}
+                                        </label>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                             <button className="btn btn-primary" onClick={addCharacter}>
                                 ➕ Add Character
                             </button>
@@ -885,11 +891,11 @@
                                 cursor: isPanning ? 'grabbing' : 'default',
                                 // Apply dynamic grid via CSS custom property
                                 ...(showGrid && {
-                                    '--grid-size': `${gridSize}px`,
                                     backgroundImage: `
-                                        repeating-linear-gradient(0deg, transparent, transparent ${gridSize - 1}px, rgba(255,255,255,0.3) ${gridSize - 1}px, rgba(255,255,255,0.3) ${gridSize}px),
-                                        repeating-linear-gradient(90deg, transparent, transparent ${gridSize - 1}px, rgba(255,255,255,0.3) ${gridSize - 1}px, rgba(255,255,255,0.3) ${gridSize}px)
-                                    `
+                                        linear-gradient(to right, rgba(255,255,255,0.2) 1px, transparent 1px),
+                                        linear-gradient(to bottom, rgba(255,255,255,0.2) 1px, transparent 1px)
+                                    `,
+                                    backgroundSize: `${gridSize}px ${gridSize}px`
                                 })
                             }}
                             onWheel={handleWheel}
@@ -1431,30 +1437,6 @@
                                             </div>
                                         </>
                                     )}
-                                    <div
-                                        className="context-menu-item"
-                                        onClick={() => {
-                                            const newInit = prompt(
-                                                currentChar.initiative === null || currentChar.initiative === undefined
-                                                    ? 'Enter initiative value (higher goes first):'
-                                                    : `Current initiative: ${currentChar.initiative}\nEnter new value:`,
-                                                currentChar.initiative !== null && currentChar.initiative !== undefined
-                                                    ? currentChar.initiative
-                                                    : ''
-                                            );
-                                            if (newInit !== null && newInit.trim() !== '') {
-                                                const initValue = parseInt(newInit);
-                                                if (!isNaN(initValue)) {
-                                                    saveHistory();
-                                                    updateCharacter(currentChar.id, { initiative: initValue });
-                                                }
-                                            }
-                                        }}
-                                    >
-                                        {currentChar.initiative === null || currentChar.initiative === undefined
-                                            ? '➕ Add to Initiative'
-                                            : `🔢 Edit Initiative (${currentChar.initiative})`}
-                                    </div>
                                 </div>
 
                                 {/* Health Controls - only for allies */}
@@ -1731,45 +1713,7 @@
 
                     {/* INITIATIVE BAR (Bottom) */}
                     <div className={`initiative-bottom ${!sidebarVisible ? 'sidebar-hidden' : ''}`}>
-                        <div className="initiative-bottom-title">
-                            <span>Initiative Order</span>
-                            {sortedByInitiative.length > 0 && (
-                                <button
-                                    onClick={() => {
-                                        const nextTurn = (currentTurn + 1) % sortedByInitiative.length;
-                                        setCurrentTurn(nextTurn);
-                                        // Auto-scroll to current turn card
-                                        setTimeout(() => {
-                                            const currentCard = document.querySelector('.initiative-card.current-turn');
-                                            if (currentCard) {
-                                                currentCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                                            }
-                                        }, 50);
-                                    }}
-                                    style={{
-                                        padding: '6px 12px',
-                                        background: 'rgba(99, 102, 241, 0.6)',
-                                        border: '2px solid #6366f1',
-                                        borderRadius: '6px',
-                                        color: 'white',
-                                        fontWeight: '600',
-                                        cursor: 'pointer',
-                                        fontSize: '12px',
-                                        transition: 'all 0.2s'
-                                    }}
-                                    onMouseOver={(e) => {
-                                        e.target.style.background = 'rgba(99, 102, 241, 0.8)';
-                                        e.target.style.transform = 'scale(1.05)';
-                                    }}
-                                    onMouseOut={(e) => {
-                                        e.target.style.background = 'rgba(99, 102, 241, 0.6)';
-                                        e.target.style.transform = 'scale(1)';
-                                    }}
-                                >
-                                    ⏭ Next Turn
-                                </button>
-                            )}
-                        </div>
+                        <div className="initiative-bottom-title">Initiative Order</div>
                         <div className="initiative-scroll-container">
                             {sortedByInitiative.length === 0 ? (
                                 <div style={{ padding: '10px', color: '#888', fontSize: '13px' }}>
@@ -1857,10 +1801,85 @@
                                         {char.type === 'ally' && (
                                             <div className="initiative-hp">{char.hp}/{char.maxHp} HP</div>
                                         )}
+                                        {/* Delete from initiative button */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                saveHistory();
+                                                updateCharacter(char.id, { initiative: null });
+                                            }}
+                                            style={{
+                                                position: 'absolute',
+                                                top: '4px',
+                                                right: '4px',
+                                                width: '20px',
+                                                height: '20px',
+                                                borderRadius: '50%',
+                                                background: 'rgba(239, 68, 68, 0.8)',
+                                                border: 'none',
+                                                color: 'white',
+                                                cursor: 'pointer',
+                                                fontSize: '12px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: 0,
+                                                transition: 'all 0.2s',
+                                                opacity: 0
+                                            }}
+                                            className="initiative-delete-btn"
+                                            onMouseOver={(e) => {
+                                                e.target.style.background = 'rgba(239, 68, 68, 1)';
+                                                e.target.style.transform = 'scale(1.1)';
+                                            }}
+                                            onMouseOut={(e) => {
+                                                e.target.style.background = 'rgba(239, 68, 68, 0.8)';
+                                                e.target.style.transform = 'scale(1)';
+                                            }}
+                                        >
+                                            ✕
+                                        </button>
                                     </div>
                                 ))
                             )}
                         </div>
+                        {sortedByInitiative.length > 0 && (
+                            <button
+                                onClick={() => {
+                                    const nextTurn = (currentTurn + 1) % sortedByInitiative.length;
+                                    setCurrentTurn(nextTurn);
+                                    // Auto-scroll to current turn card
+                                    setTimeout(() => {
+                                        const currentCard = document.querySelector('.initiative-card.current-turn');
+                                        if (currentCard) {
+                                            currentCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                        }
+                                    }, 50);
+                                }}
+                                style={{
+                                    padding: '8px 16px',
+                                    background: 'rgba(99, 102, 241, 0.6)',
+                                    border: '2px solid #6366f1',
+                                    borderRadius: '6px',
+                                    color: 'white',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    transition: 'all 0.2s',
+                                    whiteSpace: 'nowrap'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.target.style.background = 'rgba(99, 102, 241, 0.8)';
+                                    e.target.style.transform = 'scale(1.05)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.background = 'rgba(99, 102, 241, 0.6)';
+                                    e.target.style.transform = 'scale(1)';
+                                }}
+                            >
+                                ⏭ Next Turn
+                            </button>
+                        )}
                     </div>
                 </div>
             );
