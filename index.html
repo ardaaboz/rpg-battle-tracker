@@ -970,10 +970,10 @@
                                                 viewBox="0 0 100 100"
                                                 style={{
                                                     position: 'absolute',
-                                                    top: '-8px',
-                                                    left: '-8px',
-                                                    width: 'calc(100% + 16px)',
-                                                    height: 'calc(100% + 16px)'
+                                                    top: '-10%',
+                                                    left: '-10%',
+                                                    width: '120%',
+                                                    height: '120%'
                                                 }}
                                             >
                                                 <circle
@@ -1598,7 +1598,8 @@
                                         <div
                                             key={status}
                                             className="context-menu-item"
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                                e.stopPropagation();
                                                 saveHistory();
                                                 const hasStatus = currentChar.statuses.includes(status);
                                                 updateCharacter(currentChar.id, {
@@ -1630,7 +1631,8 @@
                                         <div
                                             key={status}
                                             className="context-menu-item"
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                                e.stopPropagation();
                                                 saveHistory();
                                                 updateCharacter(currentChar.id, {
                                                     statuses: currentChar.statuses.filter(s => s !== status)
