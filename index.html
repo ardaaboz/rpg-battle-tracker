@@ -376,10 +376,10 @@
                     hp = 0;
                 }
 
-                // Calculate viewport center
+                // Calculate screen center in world coordinates
                 const battlefield = battlefieldRef.current;
-                const viewportCenterX = battlefield ? (battlefield.offsetWidth / 2 - panOffset.x) / zoomLevel : 400;
-                const viewportCenterY = battlefield ? (battlefield.offsetHeight / 2 - panOffset.y) / zoomLevel : 300;
+                const screenCenterX = battlefield ? (battlefield.offsetWidth / 2 - panOffset.x) / zoomLevel : 400;
+                const screenCenterY = battlefield ? (battlefield.offsetHeight / 2 - panOffset.y) / zoomLevel : 300;
 
                 // Auto-generate name for structures based on icon
                 let characterName = formData.name;
@@ -396,15 +396,16 @@
                     maxHp: maxHp,
                     initiative: initiative,
                     image: formData.image,
-                    x: viewportCenterX - 40 + Math.random() * 80, // Center with slight randomness
-                    y: viewportCenterY - 40 + Math.random() * 80,
+                    x: screenCenterX, // Spawn at exact screen center
+                    y: screenCenterY,
                     size: 80,
                     isDead: false,
                     statuses: [],
                     damageLog: [],
                     ...(formData.type === 'structure' && {
                         structureIcon: formData.structureIcon || 'castle',
-                        structureColor: formData.structureColor || '#ffffff'
+                        structureColor: formData.structureColor || '#ffffff',
+                        rotation: 0
                     })
                 };
 
@@ -552,10 +553,13 @@
                 // Handle drawing modes
                 if (drawingMode) {
                     const rect = battlefieldRef.current.getBoundingClientRect();
-                    // Transform screen coordinates to world coordinates accounting for zoom and pan
-                    // Add 5000 offset to match SVG positioning
-                    const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel + 5000;
-                    const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel + 5000;
+                    // Transform screen coordinates to SVG coordinates
+                    // The content layer is already transformed, so we need to reverse that transform
+                    // Then add 5000 to match SVG positioning at -5000px
+                    const screenX = e.clientX - rect.left;
+                    const screenY = e.clientY - rect.top;
+                    const worldX = (screenX - panOffset.x) / zoomLevel + 5000;
+                    const worldY = (screenY - panOffset.y) / zoomLevel + 5000;
 
                     if (drawingMode === 'eraser') {
                         // Start eraser stroke
@@ -625,8 +629,10 @@
                 // Handle eraser drawing
                 if (currentEraserPath.length > 0 && drawingMode === 'eraser') {
                     const rect = battlefieldRef.current.getBoundingClientRect();
-                    const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel + 5000;
-                    const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel + 5000;
+                    const screenX = e.clientX - rect.left;
+                    const screenY = e.clientY - rect.top;
+                    const worldX = (screenX - panOffset.x) / zoomLevel + 5000;
+                    const worldY = (screenY - panOffset.y) / zoomLevel + 5000;
 
                     setCurrentEraserPath([...currentEraserPath, { x: worldX, y: worldY, size: eraserSize }]);
                     return;
@@ -635,9 +641,10 @@
                 // Handle freehand drawing
                 if (currentDrawing && drawingMode === 'freehand') {
                     const rect = battlefieldRef.current.getBoundingClientRect();
-                    // Add 5000 offset to match SVG positioning
-                    const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel + 5000;
-                    const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel + 5000;
+                    const screenX = e.clientX - rect.left;
+                    const screenY = e.clientY - rect.top;
+                    const worldX = (screenX - panOffset.x) / zoomLevel + 5000;
+                    const worldY = (screenY - panOffset.y) / zoomLevel + 5000;
 
                     setCurrentDrawing({
                         ...currentDrawing,
@@ -649,8 +656,10 @@
                 // Handle circle drawing
                 if (currentDrawing && drawingMode === 'circle') {
                     const rect = battlefieldRef.current.getBoundingClientRect();
-                    const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel + 5000;
-                    const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel + 5000;
+                    const screenX = e.clientX - rect.left;
+                    const screenY = e.clientY - rect.top;
+                    const worldX = (screenX - panOffset.x) / zoomLevel + 5000;
+                    const worldY = (screenY - panOffset.y) / zoomLevel + 5000;
 
                     setCurrentDrawing({
                         ...currentDrawing,
@@ -810,6 +819,35 @@
             };
 
             /**
+             * Handle right-click on battlefield during drawing modes
+             */
+            const handleBattlefieldRightClick = (e) => {
+                // Check if clicking on a token or interactive element
+                const isToken = e.target.closest('.token');
+                const isContextMenu = e.target.closest('.context-menu');
+
+                if (isToken || isContextMenu) {
+                    return; // Let token/context menu handle their own right-clicks
+                }
+
+                // Only handle if we're in a drawing mode
+                if (drawingMode && currentDrawing) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (drawingMode === 'freehand' || drawingMode === 'circle') {
+                        // Cancel the current drawing
+                        setCurrentDrawing(null);
+                    } else if (drawingMode === 'polygon' && currentDrawing.points.length >= 3) {
+                        // Finish the polygon (same as double-click)
+                        saveHistory();
+                        setDrawings([...drawings, currentDrawing]);
+                        setCurrentDrawing(null);
+                    }
+                }
+            };
+
+            /**
              * Start resizing a token
              * @param {MouseEvent} e - Mouse event
              * @param {object} char - Character to resize
@@ -959,15 +997,16 @@
                     if ((e.ctrlKey || e.metaKey) && e.key === 'v' && copiedCharacter) {
                         e.preventDefault();
                         saveHistory();
-                        const battlefield = battlefieldRef.current;
-                        const viewportCenterX = battlefield ? (battlefield.offsetWidth / 2 - panOffset.x) / zoomLevel : 400;
-                        const viewportCenterY = battlefield ? (battlefield.offsetHeight / 2 - panOffset.y) / zoomLevel : 300;
+
+                        // Paste near the copy source with small random offset
+                        const offsetX = 30 + Math.random() * 20; // 30-50px offset
+                        const offsetY = 30 + Math.random() * 20;
 
                         const pastedChar = {
                             ...copiedCharacter,
                             id: Date.now(),
-                            x: viewportCenterX - 40 + Math.random() * 80,
-                            y: viewportCenterY - 40 + Math.random() * 80,
+                            x: copiedCharacter.x + offsetX,
+                            y: copiedCharacter.y + offsetY,
                             initiative: copiedCharacter.initiative !== null ?
                                 (Math.max(...characters.filter(c => c.initiative !== null).map(c => c.initiative), 0) + 1) :
                                 null
@@ -1649,6 +1688,7 @@
                             onWheel={handleWheel}
                             onMouseDown={handleBattlefieldMouseDown}
                             onDoubleClick={handleBattlefieldDoubleClick}
+                            onContextMenu={handleBattlefieldRightClick}
                         >
                             {/* Background image layer - pans with content */}
                             {customBackgroundImage && (
@@ -1688,10 +1728,10 @@
                             {showGrid && (
                                 <div style={{
                                     position: 'absolute',
-                                    top: '-5000px',
-                                    left: '-5000px',
-                                    width: '10000px',
-                                    height: '10000px',
+                                    top: '-50000px',
+                                    left: '-50000px',
+                                    width: '100000px',
+                                    height: '100000px',
                                     pointerEvents: 'none',
                                     backgroundImage: `
                                         linear-gradient(to right, ${gridColor}${Math.round(gridOpacity * 255).toString(16).padStart(2, '0')} 1px, transparent 1px),
@@ -1993,7 +2033,9 @@
                                             <div
                                                 className="token-placeholder structure"
                                                 style={{
-                                                    color: char.structureColor || '#ffffff'
+                                                    color: char.structureColor || '#ffffff',
+                                                    transform: `rotate(${char.rotation || 0}deg)`,
+                                                    transformOrigin: 'center center'
                                                 }}
                                                 dangerouslySetInnerHTML={{
                                                     __html: structureIcons[char.structureIcon] || structureIcons.castle
@@ -2681,6 +2723,26 @@
                                                             width: '40px',
                                                             height: '24px',
                                                             border: 'none'
+                                                        }}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                </label>
+                                            </div>
+                                            <div className="context-menu-item">
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                                                    🔄 Rotation: {currentChar.rotation || 0}°
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="360"
+                                                        step="15"
+                                                        value={currentChar.rotation || 0}
+                                                        onChange={(e) => {
+                                                            updateCharacter(currentChar.id, { rotation: parseInt(e.target.value) });
+                                                        }}
+                                                        style={{
+                                                            flex: 1,
+                                                            cursor: 'pointer'
                                                         }}
                                                         onClick={(e) => e.stopPropagation()}
                                                     />
