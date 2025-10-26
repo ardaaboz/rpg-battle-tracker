@@ -2984,17 +2984,13 @@
                                                     updateCharacter(currentChar.id, { initiative: null });
                                                 }
                                             } else {
-                                                // Character doesn't have initiative - add it
-                                                const init = prompt(`Enter initiative for ${currentChar.name}:`);
-                                                if (init !== null && init.trim() !== '') {
-                                                    const initiative = parseInt(init);
-                                                    if (!isNaN(initiative)) {
-                                                        saveHistory();
-                                                        updateCharacter(currentChar.id, { initiative });
-                                                    } else {
-                                                        alert('Please enter a valid number');
-                                                    }
-                                                }
+                                                // Character doesn't have initiative - auto-add to end
+                                                const maxInitiative = characters.length > 0
+                                                    ? Math.max(...characters.filter(c => c.initiative !== null && c.initiative !== undefined).map(c => c.initiative), 0)
+                                                    : 0;
+                                                const initiative = maxInitiative + 1;
+                                                saveHistory();
+                                                updateCharacter(currentChar.id, { initiative });
                                             }
                                         }}
                                     >
