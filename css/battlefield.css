@@ -316,17 +316,14 @@
     right: -18px;
     width: 20px;
     height: 20px;
-    background: rgba(99, 102, 241, 0.9);
-    border: 2px solid rgba(99, 102, 241, 1);
-    border-radius: 50%;
     cursor: nwse-resize;
     z-index: 10;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, filter 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 3px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
 }
 
 .rotate-handle {
@@ -335,17 +332,14 @@
     right: -18px;
     width: 20px;
     height: 20px;
-    background: rgba(168, 85, 247, 0.9);
-    border: 2px solid rgba(168, 85, 247, 1);
-    border-radius: 50%;
     cursor: grab;
     z-index: 10;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, filter 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 3px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
 }
 
 .token:hover .resize-handle,
@@ -354,12 +348,12 @@
 }
 
 .resize-handle:hover {
-    background: rgba(99, 102, 241, 1) !important;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 1));
     transform: scale(1.2);
 }
 
 .rotate-handle:hover {
-    background: rgba(168, 85, 247, 1) !important;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 1));
     transform: scale(1.2);
 }
 

@@ -383,11 +383,21 @@
                 }
 
                 // Calculate spawn position at viewport center
-                // Tokens use content-layer coordinates (NOT SVG coordinates with +5000 offset)
-                // With transform-origin: center center on the content layer,
-                // the viewport center maps to: -panOffset / zoomLevel in content-layer space
-                var screenCenterX = -panOffset.x / zoomLevel;
-                var screenCenterY = -panOffset.y / zoomLevel;
+                // With transform-origin: center center, the transform origin is at the content layer's center
+                // Content layer is 100% x 100% = battlefield size
+                // To make a token appear at viewport center:
+                // viewportCenter = origin + zoom * ((tokenPos - origin) + pan)
+                // Solving for tokenPos when viewportCenter = origin:
+                // tokenPos = origin - pan
+                const battlefield = battlefieldRef.current;
+                if (battlefield) {
+                    const rect = battlefield.getBoundingClientRect();
+                    var screenCenterX = rect.width / 2 - panOffset.x;
+                    var screenCenterY = rect.height / 2 - panOffset.y;
+                } else {
+                    var screenCenterX = 0;
+                    var screenCenterY = 0;
+                }
 
                 // Auto-generate name for structures based on icon
                 let characterName = formData.name;
@@ -2346,7 +2356,9 @@
                                             className="resize-handle"
                                             onMouseDown={(e) => handleResizeStart(e, char)}
                                         >
-                                            <div style={{ width: '14px', height: '14px', color: 'white' }} dangerouslySetInnerHTML={{ __html: uiIcons.maximize }} />
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+                                            </svg>
                                         </div>
 
                                         {/* Rotate handle - top right (only for structures) */}
@@ -2355,7 +2367,9 @@
                                                 className="rotate-handle"
                                                 onMouseDown={(e) => handleRotateStart(e, char)}
                                             >
-                                                <div style={{ width: '14px', height: '14px', color: 'white' }} dangerouslySetInnerHTML={{ __html: uiIcons.rotate }} />
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path>
+                                                </svg>
                                             </div>
                                         )}
                                     </div>

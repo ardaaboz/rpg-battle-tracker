@@ -13,7 +13,8 @@
       "WebFetch(domain:lucide.dev)",
       "WebFetch(domain:icons.getbootstrap.com)",
       "WebFetch(domain:feathericons.com)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(npm start)"
     ],
     "deny": [],
     "ask": []
