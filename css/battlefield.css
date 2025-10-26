@@ -312,8 +312,8 @@
  */
 .resize-handle {
     position: absolute;
-    bottom: -18px;
-    right: -18px;
+    top: -18px;
+    left: -18px;
     width: 16px;
     height: 16px;
     cursor: nwse-resize;

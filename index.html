@@ -84,83 +84,7 @@
              *   damageLog: number[] (only for enemies)
              * }
              */
-            const [characters, setCharacters] = useState([
-                {
-                    id: 1,
-                    name: "Ugg'Nug",
-                    type: 'ally',
-                    hp: 2,
-                    maxHp: 2,
-                    initiative: 5,
-                    image: 'uggnug.png',
-                    x: 300,
-                    y: 350,
-                    size: 80,
-                    isDead: false,
-                    statuses: [],
-                    damageLog: []
-                },
-                {
-                    id: 2,
-                    name: 'Raizo',
-                    type: 'ally',
-                    hp: 2,
-                    maxHp: 2,
-                    initiative: 4,
-                    image: 'raizo.png',
-                    x: 450,
-                    y: 350,
-                    size: 80,
-                    isDead: false,
-                    statuses: [],
-                    damageLog: []
-                },
-                {
-                    id: 3,
-                    name: 'Vissra',
-                    type: 'ally',
-                    hp: 2,
-                    maxHp: 2,
-                    initiative: 3,
-                    image: 'vissra.png',
-                    x: 600,
-                    y: 350,
-                    size: 80,
-                    isDead: false,
-                    statuses: [],
-                    damageLog: []
-                },
-                {
-                    id: 4,
-                    name: 'Zaheed',
-                    type: 'ally',
-                    hp: 2,
-                    maxHp: 2,
-                    initiative: 2,
-                    image: 'zaheed.png',
-                    x: 750,
-                    y: 350,
-                    size: 80,
-                    isDead: false,
-                    statuses: [],
-                    damageLog: []
-                },
-                {
-                    id: 5,
-                    name: 'William',
-                    type: 'ally',
-                    hp: 2,
-                    maxHp: 2,
-                    initiative: 1,
-                    image: 'william.png',
-                    x: 900,
-                    y: 350,
-                    size: 80,
-                    isDead: false,
-                    statuses: [],
-                    damageLog: []
-                }
-            ]);
+            const [characters, setCharacters] = useState([]);
 
             // UI State
             const [showGrid, setShowGrid] = useState(true); // Grid enabled by default
@@ -1180,6 +1104,94 @@
                     }
                 }
             }, []);
+
+            // Initialize preset characters at center on mount
+            useEffect(() => {
+                if (characters.length === 0 && battlefieldRef.current) {
+                    const rect = battlefieldRef.current.getBoundingClientRect();
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+
+                    const presetCharacters = [
+                        {
+                            id: 1,
+                            name: "Ugg'Nug",
+                            type: 'ally',
+                            hp: 2,
+                            maxHp: 2,
+                            initiative: 5,
+                            image: 'uggnug.png',
+                            x: centerX - 120,
+                            y: centerY,
+                            size: 80,
+                            isDead: false,
+                            statuses: [],
+                            damageLog: []
+                        },
+                        {
+                            id: 2,
+                            name: 'Raizo',
+                            type: 'ally',
+                            hp: 2,
+                            maxHp: 2,
+                            initiative: 4,
+                            image: 'raizo.png',
+                            x: centerX - 60,
+                            y: centerY,
+                            size: 80,
+                            isDead: false,
+                            statuses: [],
+                            damageLog: []
+                        },
+                        {
+                            id: 3,
+                            name: 'Vissra',
+                            type: 'ally',
+                            hp: 2,
+                            maxHp: 2,
+                            initiative: 3,
+                            image: 'vissra.png',
+                            x: centerX,
+                            y: centerY,
+                            size: 80,
+                            isDead: false,
+                            statuses: [],
+                            damageLog: []
+                        },
+                        {
+                            id: 4,
+                            name: 'Zaheed',
+                            type: 'ally',
+                            hp: 2,
+                            maxHp: 2,
+                            initiative: 2,
+                            image: 'zaheed.png',
+                            x: centerX + 60,
+                            y: centerY,
+                            size: 80,
+                            isDead: false,
+                            statuses: [],
+                            damageLog: []
+                        },
+                        {
+                            id: 5,
+                            name: 'William',
+                            type: 'ally',
+                            hp: 2,
+                            maxHp: 2,
+                            initiative: 1,
+                            image: 'william.png',
+                            x: centerX + 120,
+                            y: centerY,
+                            size: 80,
+                            isDead: false,
+                            statuses: [],
+                            damageLog: []
+                        }
+                    ];
+                    setCharacters(presetCharacters);
+                }
+            }, [characters.length]);
 
             // ========== RENDER ==========
 
