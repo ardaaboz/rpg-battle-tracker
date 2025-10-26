@@ -1734,14 +1734,16 @@
                                     const handleDrawingRightClick = (e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        saveHistory(); // Save to undo history
-                                        setDrawings(drawings.filter((_, i) => i !== index));
-                                        // Also remove eraser masks for this drawing
-                                        setEraserMasks(prev => {
-                                            const newMasks = { ...prev };
-                                            delete newMasks[index];
-                                            return newMasks;
-                                        });
+                                        // Right-click erases like paintbrush (adds eraser mask at click position)
+                                        const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+                                        const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel + 5000;
+                                        const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel + 5000;
+
+                                        saveHistory();
+                                        setEraserMasks(prev => ({
+                                            ...prev,
+                                            [index]: [...(prev[index] || []), { x: worldX, y: worldY, size: eraserSize }]
+                                        }));
                                     };
 
                                     const commonProps = {
