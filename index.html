@@ -949,6 +949,19 @@
                 return () => document.removeEventListener('keydown', handleKeyDown);
             }, [history, characters, drawings]); // Dependencies for undo function
 
+            // Load gallery images from localStorage on mount
+            useEffect(() => {
+                const saved = localStorage.getItem('battleMapGallery');
+                if (saved) {
+                    try {
+                        const images = JSON.parse(saved);
+                        setGalleryImages(images);
+                    } catch (e) {
+                        console.error('Failed to load gallery images:', e);
+                    }
+                }
+            }, []);
+
             // ========== RENDER ==========
 
             return (
@@ -1242,6 +1255,18 @@
                                     Load Battle
                                 </label>
                             </div>
+                        </div>
+
+                        {/* Image Gallery */}
+                        <div className="section">
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setGalleryVisible(!galleryVisible)}
+                                style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}
+                            >
+                                <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.image }} />
+                                Image Gallery ({galleryImages.length})
+                            </button>
                         </div>
                     </div>
 
@@ -2015,6 +2040,213 @@
                                         onChange={(e) => setNotes(e.target.value)}
                                         placeholder="Take notes about the battle..."
                                     />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Image Gallery Modal */}
+                        {galleryVisible && (
+                            <div
+                                style={{
+                                    position: 'fixed',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    background: 'rgba(0, 0, 0, 0.85)',
+                                    zIndex: 10000,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '20px'
+                                }}
+                                onClick={() => setGalleryVisible(false)}
+                            >
+                                <div
+                                    style={{
+                                        background: 'rgba(20, 20, 30, 0.98)',
+                                        padding: '30px',
+                                        borderRadius: '16px',
+                                        border: '2px solid rgba(99, 102, 241, 0.5)',
+                                        maxWidth: '900px',
+                                        width: '100%',
+                                        maxHeight: '80vh',
+                                        overflow: 'auto',
+                                        backdropFilter: 'blur(10px)'
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                        <h2 style={{ margin: 0, color: '#a78bfa' }}>Image Gallery</h2>
+                                        <span
+                                            style={{
+                                                cursor: 'pointer',
+                                                fontSize: '24px',
+                                                padding: '0 10px',
+                                                color: '#999',
+                                                transition: 'color 0.2s'
+                                            }}
+                                            onClick={() => setGalleryVisible(false)}
+                                            onMouseOver={(e) => e.target.style.color = '#fff'}
+                                            onMouseOut={(e) => e.target.style.color = '#999'}
+                                        >
+                                            ✕
+                                        </span>
+                                    </div>
+
+                                    {/* Upload Button */}
+                                    <div className="file-input-wrapper" style={{ marginBottom: '20px' }}>
+                                        <input
+                                            type="file"
+                                            id="galleryUpload"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={(e) => {
+                                                const files = Array.from(e.target.files);
+                                                files.forEach(file => {
+                                                    const reader = new FileReader();
+                                                    reader.onload = (event) => {
+                                                        const newImage = {
+                                                            id: Date.now() + Math.random(),
+                                                            url: event.target.result,
+                                                            name: file.name,
+                                                            type: 'character' // Default type
+                                                        };
+                                                        setGalleryImages([...galleryImages, newImage]);
+                                                        // Save to localStorage
+                                                        const saved = JSON.parse(localStorage.getItem('battleMapGallery') || '[]');
+                                                        saved.push(newImage);
+                                                        localStorage.setItem('battleMapGallery', JSON.stringify(saved));
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                });
+                                                e.target.value = ''; // Reset input
+                                            }}
+                                            style={{ display: 'none' }}
+                                        />
+                                        <label
+                                            htmlFor="galleryUpload"
+                                            className="btn btn-primary"
+                                            style={{
+                                                width: '100%',
+                                                margin: 0,
+                                                display: 'flex',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.upload }} />
+                                            Upload Images
+                                        </label>
+                                    </div>
+
+                                    {/* Gallery Grid */}
+                                    {galleryImages.length === 0 ? (
+                                        <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                                            <p>No images in gallery</p>
+                                            <p style={{ fontSize: '14px' }}>Upload images to use them for characters or backgrounds</p>
+                                        </div>
+                                    ) : (
+                                        <div style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                                            gap: '15px'
+                                        }}>
+                                            {galleryImages.map((image) => (
+                                                <div
+                                                    key={image.id}
+                                                    style={{
+                                                        position: 'relative',
+                                                        aspectRatio: '1',
+                                                        borderRadius: '8px',
+                                                        overflow: 'hidden',
+                                                        border: '2px solid rgba(255, 255, 255, 0.2)',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                    onMouseOver={(e) => {
+                                                        e.currentTarget.style.borderColor = '#6366f1';
+                                                        e.currentTarget.style.transform = 'scale(1.05)';
+                                                    }}
+                                                    onMouseOut={(e) => {
+                                                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                    }}
+                                                    onClick={() => {
+                                                        // Copy URL to clipboard for use
+                                                        navigator.clipboard.writeText(image.url);
+                                                        alert('Image URL copied! Paste it into character image field.');
+                                                    }}
+                                                >
+                                                    <img
+                                                        src={image.url}
+                                                        alt={image.name}
+                                                        style={{
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            objectFit: 'cover'
+                                                        }}
+                                                    />
+                                                    {/* Delete button */}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (confirm('Delete this image?')) {
+                                                                const updated = galleryImages.filter(img => img.id !== image.id);
+                                                                setGalleryImages(updated);
+                                                                localStorage.setItem('battleMapGallery', JSON.stringify(updated));
+                                                            }
+                                                        }}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: '5px',
+                                                            right: '5px',
+                                                            width: '24px',
+                                                            height: '24px',
+                                                            borderRadius: '50%',
+                                                            background: 'rgba(239, 68, 68, 0.9)',
+                                                            border: 'none',
+                                                            color: 'white',
+                                                            cursor: 'pointer',
+                                                            fontSize: '14px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                        onMouseOver={(e) => {
+                                                            e.stopPropagation();
+                                                            e.target.style.background = 'rgba(239, 68, 68, 1)';
+                                                            e.target.style.transform = 'scale(1.1)';
+                                                        }}
+                                                        onMouseOut={(e) => {
+                                                            e.target.style.background = 'rgba(239, 68, 68, 0.9)';
+                                                            e.target.style.transform = 'scale(1)';
+                                                        }}
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                    {/* Image name tooltip */}
+                                                    <div style={{
+                                                        position: 'absolute',
+                                                        bottom: 0,
+                                                        left: 0,
+                                                        right: 0,
+                                                        background: 'rgba(0, 0, 0, 0.8)',
+                                                        padding: '5px',
+                                                        fontSize: '11px',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap'
+                                                    }}>
+                                                        {image.name}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
