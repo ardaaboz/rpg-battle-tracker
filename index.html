@@ -165,6 +165,7 @@
             // UI State
             const [showGrid, setShowGrid] = useState(true); // Grid enabled by default
             const [gridSize, setGridSize] = useState(80); // Default 80px (matches default character size)
+            const [showDamagePermanently, setShowDamagePermanently] = useState(false); // Toggle for showing damage on enemies
             const [contextMenu, setContextMenu] = useState(null);
             const [draggedChar, setDraggedChar] = useState(null);
             const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -957,6 +958,13 @@
                                 # {showGrid ? 'Hide Grid' : 'Show Grid'}
                             </button>
                             <button
+                                className={`toolbar-btn ${showDamagePermanently ? 'active' : ''}`}
+                                onClick={() => setShowDamagePermanently(!showDamagePermanently)}
+                                title="Show damage on all enemies without hovering"
+                            >
+                                💥 {showDamagePermanently ? 'Hide Damage' : 'Show Damage'}
+                            </button>
+                            <button
                                 className="toolbar-btn"
                                 onClick={undo}
                                 disabled={history.length === 0}
@@ -994,23 +1002,6 @@
                             onWheel={handleWheel}
                             onMouseDown={handleBattlefieldMouseDown}
                         >
-                            {/* Fixed grid overlay (doesn't pan with map) */}
-                            {showGrid && (
-                                <div style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    bottom: 0,
-                                    pointerEvents: 'none',
-                                    backgroundImage: `
-                                        linear-gradient(to right, rgba(255,255,255,0.2) 1px, transparent 1px),
-                                        linear-gradient(to bottom, rgba(255,255,255,0.2) 1px, transparent 1px)
-                                    `,
-                                    backgroundSize: `${gridSize}px ${gridSize}px`,
-                                    zIndex: 5
-                                }} />
-                            )}
                             {/* Background image layer */}
                             <div style={{
                                 position: 'absolute',
@@ -1041,6 +1032,23 @@
                                 transformOrigin: 'center center',
                                 transition: isPanning ? 'none' : 'transform 0.2s ease'
                             }}>
+                            {/* Grid overlay that transforms with the world */}
+                            {showGrid && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '-5000px',
+                                    left: '-5000px',
+                                    width: '10000px',
+                                    height: '10000px',
+                                    pointerEvents: 'none',
+                                    backgroundImage: `
+                                        linear-gradient(to right, rgba(255,255,255,0.2) 1px, transparent 1px),
+                                        linear-gradient(to bottom, rgba(255,255,255,0.2) 1px, transparent 1px)
+                                    `,
+                                    backgroundSize: `${gridSize}px ${gridSize}px`,
+                                    zIndex: 0
+                                }} />
+                            )}
                             {/* Render all character tokens */}
                             {characters.map(char => {
                                 const hpPercent = char.maxHp > 0 ? Math.min(100, (char.hp / char.maxHp) * 100) : 0;
@@ -1092,7 +1100,7 @@
                                         )}
 
                                         {/* Damage Tooltip for Enemies and Neutrals */}
-                                        {hoveredChar === char.id && char.type !== 'ally' && char.damageLog && char.damageLog.length > 0 && (
+                                        {(hoveredChar === char.id || showDamagePermanently) && char.type !== 'ally' && char.damageLog && char.damageLog.length > 0 && (
                                             <div className="damage-tooltip">
                                                 <div style={{ fontWeight: 'bold', marginBottom: '6px', color: '#fca5a5' }}>
                                                     Damage Taken:
