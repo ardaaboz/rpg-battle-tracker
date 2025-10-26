@@ -324,12 +324,18 @@
     transition: opacity 0.2s;
 }
 
-.token:hover .resize-handle {
+.token:hover .resize-handle,
+.token:hover .rotate-handle {
     opacity: 1;
 }
 
 .resize-handle:hover {
     background: rgba(99, 102, 241, 1);
+    transform: scale(1.2);
+}
+
+.rotate-handle:hover {
+    background: rgba(168, 85, 247, 1);
     transform: scale(1.2);
 }
 
