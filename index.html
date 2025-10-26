@@ -249,7 +249,10 @@
                 beacon: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l-2 6h4l-2-6zm-4 8l-2 6h12l-2-6H8zm-2 8v4h12v-4H6z"/></svg>',
                 cauldron: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M7 8l-2 6c0 3.3 2.7 6 6 6s6-2.7 6-6l-2-6H7zm-3 0h2v1H4V8zm16 0h2v1h-2V8z"/></svg>',
                 brazier: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8 14h8l-2-8H10l-2 8zm-2 2v6h12v-6H6z"/></svg>'
-            }; const structureIcons = {}; Object.keys(structureIconCategories).forEach(c => Object.assign(structureIcons, structureIconCategories[c].icons));
+            }}
+            };
+            const structureIcons = {};
+            Object.keys(structureIconCategories).forEach(c => Object.assign(structureIcons, structureIconCategories[c].icons));
 
             // SVG Icons for UI elements (white, can be colored via CSS)
             const uiIcons = {
