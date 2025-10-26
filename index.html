@@ -1107,7 +1107,7 @@
                                             setGalleryContext({ type: 'newCharacter' });
                                             setGalleryVisible(true);
                                         }}
-                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', width: '100%', cursor: 'pointer' }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', width: '100%', cursor: 'pointer', color: 'white' }}
                                     >
                                         <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: formData.image ? uiIcons.check : uiIcons.image }} />
                                         {formData.image ? 'Image Selected' : 'Select from Gallery'}
@@ -1144,7 +1144,7 @@
                                             setGalleryContext({ type: 'background' });
                                             setGalleryVisible(true);
                                         }}
-                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', width: '100%', cursor: 'pointer' }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', width: '100%', cursor: 'pointer', color: 'white' }}
                                     >
                                         <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: customBackgroundImage ? uiIcons.check : uiIcons.image }} />
                                         {customBackgroundImage ? 'Custom Background Set' : 'Select from Gallery'}
@@ -1639,7 +1639,10 @@
                                 backgroundRepeat: 'no-repeat',
                                 opacity: backgroundOpacity,
                                 pointerEvents: 'none',
-                                zIndex: 0
+                                zIndex: 0,
+                                transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+                                transformOrigin: 'center center',
+                                transition: isPanning ? 'none' : 'transform 0.2s ease'
                             }} />
 
                             {/* Content layer - contains all tokens */}
