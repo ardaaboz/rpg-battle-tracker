@@ -2130,18 +2130,21 @@
                                     cursor: 'pointer',
                                     fontSize: '13px',
                                     transition: 'all 0.2s',
-                                    whiteSpace: 'nowrap'
+                                    whiteSpace: 'nowrap',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
                                 }}
                                 onMouseOver={(e) => {
-                                    e.target.style.background = 'rgba(99, 102, 241, 0.8)';
-                                    e.target.style.transform = 'scale(1.05)';
+                                    e.currentTarget.style.background = 'rgba(99, 102, 241, 0.8)';
+                                    e.currentTarget.style.transform = 'scale(1.05)';
                                 }}
                                 onMouseOut={(e) => {
-                                    e.target.style.background = 'rgba(99, 102, 241, 0.6)';
-                                    e.target.style.transform = 'scale(1)';
+                                    e.currentTarget.style.background = 'rgba(99, 102, 241, 0.6)';
+                                    e.currentTarget.style.transform = 'scale(1)';
                                 }}
                             >
-                                <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.skipForward }} />
+                                <span style={{ width: '14px', height: '14px', display: 'flex', flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: uiIcons.skipForward }} />
                                 Next Turn
                             </button>
                         )}
