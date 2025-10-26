@@ -196,7 +196,7 @@
             const [isPanning, setIsPanning] = useState(false);
 
             // Drawing Tools State
-            const [drawingMode, setDrawingMode] = useState(null); // 'freehand', 'circle', 'polygon', null
+            const [drawingMode, setDrawingMode] = useState(null); // 'freehand', 'circle', 'polygon', 'arrow', 'measure', 'eraser', null
             const [drawings, setDrawings] = useState([]); // Array of drawing objects
             const [currentDrawing, setCurrentDrawing] = useState(null); // Drawing in progress
             const [drawingColor, setDrawingColor] = useState('#ffffff');
@@ -324,6 +324,8 @@
                 heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>',
                 maximize: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>',
                 rotate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path></svg>',
+                arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>',
+                ruler: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16M4 20L20 4M4 8l4-4M8 4l4 4M12 8l4-4M16 4l4 4M4 16l4-4M8 12l4 4M12 16l4-4M16 12l4 4"></path></svg>',
                 skull: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.11"></path><circle cx="9" cy="8" r="1" fill="currentColor"></circle><circle cx="15" cy="8" r="1" fill="currentColor"></circle></svg>',
                 pause: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>',
                 skipForward: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>',
@@ -555,14 +557,16 @@
                 // Handle drawing modes
                 if (drawingMode) {
                     const rect = battlefieldRef.current.getBoundingClientRect();
-                    // Screen coords relative to battlefield
                     const screenX = e.clientX - rect.left;
                     const screenY = e.clientY - rect.top;
-                    // Content layer transform: translate(pan) scale(zoom)
-                    // CSS transforms apply right-to-left, so: first scale, then translate
-                    // To get world coords: (screen / zoom) - (pan / zoom) + SVG_offset
-                    const worldX = (screenX / zoomLevel) - (panOffset.x / zoomLevel) + 5000;
-                    const worldY = (screenY / zoomLevel) - (panOffset.y / zoomLevel) + 5000;
+
+                    // Transform origin is center, so we need to account for that
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+
+                    // Translate to origin, undo scale, undo pan, translate back
+                    const worldX = ((screenX - centerX) / zoomLevel) + centerX - panOffset.x / zoomLevel + 5000;
+                    const worldY = ((screenY - centerY) / zoomLevel) + centerY - panOffset.y / zoomLevel + 5000;
 
                     if (drawingMode === 'eraser') {
                         // Start eraser stroke
@@ -585,6 +589,22 @@
                             startY: worldY,
                             color: drawingColor,
                             opacity: drawingOpacity
+                        });
+                    } else if (drawingMode === 'arrow') {
+                        // Start arrow drawing - store start point
+                        setCurrentDrawing({
+                            type: 'arrow',
+                            startX: worldX,
+                            startY: worldY,
+                            color: drawingColor,
+                            opacity: drawingOpacity
+                        });
+                    } else if (drawingMode === 'measure') {
+                        // Start measure drawing - store start point
+                        setCurrentDrawing({
+                            type: 'measure',
+                            startX: worldX,
+                            startY: worldY
                         });
                     } else if (drawingMode === 'polygon') {
                         if (!currentDrawing) {
@@ -634,8 +654,10 @@
                     const rect = battlefieldRef.current.getBoundingClientRect();
                     const screenX = e.clientX - rect.left;
                     const screenY = e.clientY - rect.top;
-                    const worldX = (screenX / zoomLevel) - (panOffset.x / zoomLevel) + 5000;
-                    const worldY = (screenY / zoomLevel) - (panOffset.y / zoomLevel) + 5000;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const worldX = ((screenX - centerX) / zoomLevel) + centerX - panOffset.x / zoomLevel + 5000;
+                    const worldY = ((screenY - centerY) / zoomLevel) + centerY - panOffset.y / zoomLevel + 5000;
 
                     setCurrentEraserPath([...currentEraserPath, { x: worldX, y: worldY, size: eraserSize }]);
                     return;
@@ -646,8 +668,10 @@
                     const rect = battlefieldRef.current.getBoundingClientRect();
                     const screenX = e.clientX - rect.left;
                     const screenY = e.clientY - rect.top;
-                    const worldX = (screenX / zoomLevel) - (panOffset.x / zoomLevel) + 5000;
-                    const worldY = (screenY / zoomLevel) - (panOffset.y / zoomLevel) + 5000;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const worldX = ((screenX - centerX) / zoomLevel) + centerX - panOffset.x / zoomLevel + 5000;
+                    const worldY = ((screenY - centerY) / zoomLevel) + centerY - panOffset.y / zoomLevel + 5000;
 
                     setCurrentDrawing({
                         ...currentDrawing,
@@ -661,8 +685,46 @@
                     const rect = battlefieldRef.current.getBoundingClientRect();
                     const screenX = e.clientX - rect.left;
                     const screenY = e.clientY - rect.top;
-                    const worldX = (screenX / zoomLevel) - (panOffset.x / zoomLevel) + 5000;
-                    const worldY = (screenY / zoomLevel) - (panOffset.y / zoomLevel) + 5000;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const worldX = ((screenX - centerX) / zoomLevel) + centerX - panOffset.x / zoomLevel + 5000;
+                    const worldY = ((screenY - centerY) / zoomLevel) + centerY - panOffset.y / zoomLevel + 5000;
+
+                    setCurrentDrawing({
+                        ...currentDrawing,
+                        endX: worldX,
+                        endY: worldY
+                    });
+                    return;
+                }
+
+                // Handle arrow drawing
+                if (currentDrawing && drawingMode === 'arrow') {
+                    const rect = battlefieldRef.current.getBoundingClientRect();
+                    const screenX = e.clientX - rect.left;
+                    const screenY = e.clientY - rect.top;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const worldX = ((screenX - centerX) / zoomLevel) + centerX - panOffset.x / zoomLevel + 5000;
+                    const worldY = ((screenY - centerY) / zoomLevel) + centerY - panOffset.y / zoomLevel + 5000;
+
+                    setCurrentDrawing({
+                        ...currentDrawing,
+                        endX: worldX,
+                        endY: worldY
+                    });
+                    return;
+                }
+
+                // Handle measure drawing
+                if (currentDrawing && drawingMode === 'measure') {
+                    const rect = battlefieldRef.current.getBoundingClientRect();
+                    const screenX = e.clientX - rect.left;
+                    const screenY = e.clientY - rect.top;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const worldX = ((screenX - centerX) / zoomLevel) + centerX - panOffset.x / zoomLevel + 5000;
+                    const worldY = ((screenY - centerY) / zoomLevel) + centerY - panOffset.y / zoomLevel + 5000;
 
                     setCurrentDrawing({
                         ...currentDrawing,
@@ -772,6 +834,20 @@
                     return;
                 }
 
+                // Finish arrow drawing
+                if (currentDrawing && drawingMode === 'arrow' && currentDrawing.endX && currentDrawing.endY) {
+                    saveHistory();
+                    setDrawings([...drawings, currentDrawing]);
+                    setCurrentDrawing(null);
+                    return;
+                }
+
+                // Finish measure (just clear, don't save)
+                if (currentDrawing && drawingMode === 'measure') {
+                    setCurrentDrawing(null);
+                    return;
+                }
+
                 // Finish circle drawing (Paint-style: bounding rectangle)
                 if (currentDrawing && drawingMode === 'circle' && currentDrawing.endX && currentDrawing.endY) {
                     const minX = Math.min(currentDrawing.startX, currentDrawing.endX);
@@ -822,7 +898,7 @@
             };
 
             /**
-             * Handle right-click on battlefield - acts as erase brush on any drawing
+             * Handle right-click on battlefield - does nothing, let drawings handle their own right-clicks
              */
             const handleBattlefieldRightClick = (e) => {
                 // Check if clicking on a token or interactive element
@@ -833,37 +909,8 @@
                     return; // Let token/context menu handle their own right-clicks
                 }
 
-                // Right-click acts as erase brush - add eraser mask at click position
-                if (drawingMode) {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    const rect = battlefieldRef.current.getBoundingClientRect();
-                    const screenX = e.clientX - rect.left;
-                    const screenY = e.clientY - rect.top;
-                    const worldX = (screenX / zoomLevel) - (panOffset.x / zoomLevel) + 5000;
-                    const worldY = (screenY / zoomLevel) - (panOffset.y / zoomLevel) + 5000;
-
-                    // If there's an active drawing being created, add erase point to it
-                    if (currentDrawing && (drawingMode === 'freehand' || drawingMode === 'circle')) {
-                        // Finish and save current drawing first
-                        saveHistory();
-                        setDrawings([...drawings, currentDrawing]);
-                        setCurrentDrawing(null);
-
-                        // Add eraser mask to the drawing we just finished
-                        const newIndex = drawings.length;
-                        setEraserMasks(prev => ({
-                            ...prev,
-                            [newIndex]: [{ x: worldX, y: worldY, size: eraserSize }]
-                        }));
-                    } else if (currentDrawing && drawingMode === 'polygon' && currentDrawing.points.length >= 3) {
-                        // Finish polygon with double-click
-                        saveHistory();
-                        setDrawings([...drawings, currentDrawing]);
-                        setCurrentDrawing(null);
-                    }
-                }
+                // Right-clicks on empty battlefield do nothing - just prevent default context menu
+                e.preventDefault();
             };
 
             /**
@@ -1511,6 +1558,40 @@
                                                     }}
                                                     onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.3)'}
                                                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    onClick={() => setDrawingMode('arrow')}
+                                                >
+                                                    <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.arrow }} />
+                                                    Arrow
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        padding: '10px 16px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '13px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px',
+                                                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.3)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    onClick={() => setDrawingMode('measure')}
+                                                >
+                                                    <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.ruler }} />
+                                                    Measure Distance
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        padding: '10px 16px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '13px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px',
+                                                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.3)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                                     onClick={() => setDrawingMode('eraser')}
                                                 >
                                                     <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.eraser }} />
@@ -1564,6 +1645,8 @@
                                                         {drawingMode === 'freehand' && 'Freehand Draw'}
                                                         {drawingMode === 'circle' && 'Circle Tool'}
                                                         {drawingMode === 'polygon' && 'Polygon Tool'}
+                                                        {drawingMode === 'arrow' && 'Arrow Tool'}
+                                                        {drawingMode === 'measure' && 'Measure Distance'}
                                                         {drawingMode === 'eraser' && 'Eraser Tool'}
                                                     </span>
                                                     <button
@@ -1587,8 +1670,8 @@
                                                 </div>
 
                                                 <div style={{ padding: '16px' }}>
-                                                    {/* Color picker - hide for eraser */}
-                                                    {drawingMode !== 'eraser' && (
+                                                    {/* Color picker - hide for eraser and measure */}
+                                                    {drawingMode !== 'eraser' && drawingMode !== 'measure' && (
                                                         <div style={{ marginBottom: '14px' }}>
                                                             <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#999' }}>
                                                                 Color
@@ -1602,8 +1685,8 @@
                                                         </div>
                                                     )}
 
-                                                    {/* Opacity slider - hide for eraser */}
-                                                    {drawingMode !== 'eraser' && (
+                                                    {/* Opacity slider - hide for eraser, arrow, and measure */}
+                                                    {drawingMode !== 'eraser' && drawingMode !== 'arrow' && drawingMode !== 'measure' && (
                                                         <div style={{ marginBottom: '14px' }}>
                                                             <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#999' }}>
                                                                 Opacity: {Math.round(drawingOpacity * 100)}%
@@ -1807,11 +1890,13 @@
                                         e.preventDefault();
                                         e.stopPropagation();
                                         // Right-click erases like paintbrush (adds eraser mask at click position)
-                                        const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+                                        const rect = battlefieldRef.current.getBoundingClientRect();
                                         const screenX = e.clientX - rect.left;
                                         const screenY = e.clientY - rect.top;
-                                        const worldX = (screenX / zoomLevel) - (panOffset.x / zoomLevel) + 5000;
-                                        const worldY = (screenY / zoomLevel) - (panOffset.y / zoomLevel) + 5000;
+                                        const centerX = rect.width / 2;
+                                        const centerY = rect.height / 2;
+                                        const worldX = ((screenX - centerX) / zoomLevel) + centerX - panOffset.x / zoomLevel + 5000;
+                                        const worldY = ((screenY - centerY) / zoomLevel) + centerY - panOffset.y / zoomLevel + 5000;
 
                                         saveHistory();
                                         setEraserMasks(prev => ({
@@ -1858,6 +1943,40 @@
                                                 opacity={drawing.opacity}
                                                 {...commonProps}
                                             />
+                                        );
+                                    } else if (drawing.type === 'arrow') {
+                                        const dx = drawing.endX - drawing.startX;
+                                        const dy = drawing.endY - drawing.startY;
+                                        const angle = Math.atan2(dy, dx);
+                                        const arrowLength = Math.sqrt(dx * dx + dy * dy);
+                                        const headLength = Math.min(30, arrowLength * 0.3);
+
+                                        // Arrow head points
+                                        const headAngle = Math.PI / 6; // 30 degrees
+                                        const x1 = drawing.endX - headLength * Math.cos(angle - headAngle);
+                                        const y1 = drawing.endY - headLength * Math.sin(angle - headAngle);
+                                        const x2 = drawing.endX - headLength * Math.cos(angle + headAngle);
+                                        const y2 = drawing.endY - headLength * Math.sin(angle + headAngle);
+
+                                        return (
+                                            <g key={index} {...commonProps}>
+                                                {/* Arrow line */}
+                                                <line
+                                                    x1={drawing.startX}
+                                                    y1={drawing.startY}
+                                                    x2={drawing.endX}
+                                                    y2={drawing.endY}
+                                                    stroke={drawing.color}
+                                                    strokeWidth={3}
+                                                />
+                                                {/* Arrow head */}
+                                                <polygon
+                                                    points={`${drawing.endX},${drawing.endY} ${x1},${y1} ${x2},${y2}`}
+                                                    fill={drawing.color}
+                                                    stroke={drawing.color}
+                                                    strokeWidth={1}
+                                                />
+                                            </g>
                                         );
                                     } else if (drawing.type === 'ellipse') {
                                         return (
@@ -1930,6 +2049,73 @@
                                                         fill={currentDrawing.color}
                                                         opacity={currentDrawing.opacity}
                                                     />
+                                                );
+                                            })()
+                                        )}
+                                        {currentDrawing.type === 'arrow' && currentDrawing.endX && currentDrawing.endY && (
+                                            (() => {
+                                                const dx = currentDrawing.endX - currentDrawing.startX;
+                                                const dy = currentDrawing.endY - currentDrawing.startY;
+                                                const angle = Math.atan2(dy, dx);
+                                                const arrowLength = Math.sqrt(dx * dx + dy * dy);
+                                                const headLength = Math.min(30, arrowLength * 0.3);
+                                                const headAngle = Math.PI / 6;
+                                                const x1 = currentDrawing.endX - headLength * Math.cos(angle - headAngle);
+                                                const y1 = currentDrawing.endY - headLength * Math.sin(angle - headAngle);
+                                                const x2 = currentDrawing.endX - headLength * Math.cos(angle + headAngle);
+                                                const y2 = currentDrawing.endY - headLength * Math.sin(angle + headAngle);
+                                                return (
+                                                    <g>
+                                                        <line
+                                                            x1={currentDrawing.startX}
+                                                            y1={currentDrawing.startY}
+                                                            x2={currentDrawing.endX}
+                                                            y2={currentDrawing.endY}
+                                                            stroke={currentDrawing.color}
+                                                            strokeWidth={3}
+                                                        />
+                                                        <polygon
+                                                            points={`${currentDrawing.endX},${currentDrawing.endY} ${x1},${y1} ${x2},${y2}`}
+                                                            fill={currentDrawing.color}
+                                                            stroke={currentDrawing.color}
+                                                            strokeWidth={1}
+                                                        />
+                                                    </g>
+                                                );
+                                            })()
+                                        )}
+                                        {currentDrawing.type === 'measure' && currentDrawing.endX && currentDrawing.endY && (
+                                            (() => {
+                                                const dx = currentDrawing.endX - currentDrawing.startX;
+                                                const dy = currentDrawing.endY - currentDrawing.startY;
+                                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                                const midX = (currentDrawing.startX + currentDrawing.endX) / 2;
+                                                const midY = (currentDrawing.startY + currentDrawing.endY) / 2;
+                                                return (
+                                                    <g>
+                                                        <line
+                                                            x1={currentDrawing.startX}
+                                                            y1={currentDrawing.startY}
+                                                            x2={currentDrawing.endX}
+                                                            y2={currentDrawing.endY}
+                                                            stroke="#fbbf24"
+                                                            strokeWidth={3}
+                                                            strokeDasharray="5,5"
+                                                        />
+                                                        <circle cx={currentDrawing.startX} cy={currentDrawing.startY} r="5" fill="#fbbf24" />
+                                                        <circle cx={currentDrawing.endX} cy={currentDrawing.endY} r="5" fill="#fbbf24" />
+                                                        <text
+                                                            x={midX}
+                                                            y={midY - 10}
+                                                            fill="#fbbf24"
+                                                            fontSize="20"
+                                                            fontWeight="bold"
+                                                            textAnchor="middle"
+                                                            style={{ textShadow: '0 0 3px black, 0 0 3px black' }}
+                                                        >
+                                                            {Math.round(distance)}px
+                                                        </text>
+                                                    </g>
                                                 );
                                             })()
                                         )}
@@ -2098,8 +2284,8 @@
                                                 position: 'absolute',
                                                 bottom: '-12px',
                                                 right: '-12px',
-                                                width: '24px',
-                                                height: '24px',
+                                                width: '26px',
+                                                height: '26px',
                                                 background: 'rgba(99, 102, 241, 0.9)',
                                                 border: '2px solid rgba(99, 102, 241, 1)',
                                                 borderRadius: '50%',
@@ -2110,10 +2296,11 @@
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                color: 'white'
+                                                padding: '4px'
                                             }}
-                                            dangerouslySetInnerHTML={{ __html: uiIcons.maximize }}
-                                        />
+                                        >
+                                            <div style={{ width: '100%', height: '100%', color: 'white' }} dangerouslySetInnerHTML={{ __html: uiIcons.maximize }} />
+                                        </div>
 
                                         {/* Rotate handle - top right (only for structures) */}
                                         {char.type === 'structure' && (
@@ -2124,8 +2311,8 @@
                                                     position: 'absolute',
                                                     top: '-12px',
                                                     right: '-12px',
-                                                    width: '24px',
-                                                    height: '24px',
+                                                    width: '26px',
+                                                    height: '26px',
                                                     background: 'rgba(168, 85, 247, 0.9)',
                                                     border: '2px solid rgba(168, 85, 247, 1)',
                                                     borderRadius: '50%',
@@ -2136,10 +2323,11 @@
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
-                                                    color: 'white'
+                                                    padding: '4px'
                                                 }}
-                                                dangerouslySetInnerHTML={{ __html: uiIcons.rotate }}
-                                            />
+                                            >
+                                                <div style={{ width: '100%', height: '100%', color: 'white' }} dangerouslySetInnerHTML={{ __html: uiIcons.rotate }} />
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -3093,7 +3281,20 @@
                                 <div style={{ padding: '4px' }}>
                                     <div
                                         className="context-menu-item"
-                                        onClick={() => updateCharacter(currentChar.id, { isDead: !currentChar.isDead })}
+                                        onClick={() => {
+                                            const newDeadStatus = !currentChar.isDead;
+                                            // If marking as dead, remove from initiative
+                                            if (newDeadStatus) {
+                                                updateCharacter(currentChar.id, { isDead: true, initiative: null });
+                                            } else {
+                                                // If reviving, re-add to initiative
+                                                const maxInitiative = characters.length > 0
+                                                    ? Math.max(...characters.filter(c => c.initiative !== null && c.initiative !== undefined).map(c => c.initiative), 0)
+                                                    : 0;
+                                                const initiative = maxInitiative + 1;
+                                                updateCharacter(currentChar.id, { isDead: false, initiative });
+                                            }
+                                        }}
                                     >
                                         <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: currentChar.isDead ? uiIcons.heart : uiIcons.skull }} />
                                         {currentChar.isDead ? 'Revive' : 'Mark as Dead'}
