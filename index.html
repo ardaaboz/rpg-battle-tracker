@@ -181,6 +181,7 @@
             const [backgroundImage, setBackgroundImage] = useState('none');
             const [customBackgroundImage, setCustomBackgroundImage] = useState('');
             const [backgroundOpacity, setBackgroundOpacity] = useState(1);
+            const [backgroundScale, setBackgroundScale] = useState(1);
             const [editMode, setEditMode] = useState(null);
             const [draggedInitiative, setDraggedInitiative] = useState(null);
             const [notesVisible, setNotesVisible] = useState(false);
@@ -1164,6 +1165,18 @@
                                 />
                             </div>
                             <div className="input-group">
+                                <label>Background Scale: {Math.round(backgroundScale * 100)}%</label>
+                                <input
+                                    type="range"
+                                    min="0.5"
+                                    max="3"
+                                    step="0.1"
+                                    value={backgroundScale}
+                                    onChange={(e) => setBackgroundScale(parseFloat(e.target.value))}
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                            <div className="input-group">
                                 <label>Grid Size: {gridSize}px ({(gridSize / 40).toFixed(1)}ft)</label>
                                 <input
                                     type="range"
@@ -1622,19 +1635,19 @@
                             onMouseDown={handleBattlefieldMouseDown}
                             onDoubleClick={handleBattlefieldDoubleClick}
                         >
-                            {/* Background image layer */}
+                            {/* Background image layer - fills entire grid world */}
                             <div style={{
                                 position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: '100%',
-                                height: '100%',
+                                top: '-5000px',
+                                left: '-5000px',
+                                width: '10000px',
+                                height: '10000px',
                                 backgroundImage: backgroundImage !== 'none' && backgroundImage !== 'custom'
                                     ? `url(${backgrounds[backgroundImage].image})`
                                     : backgroundImage === 'custom'
                                     ? `url(${customBackgroundImage})`
                                     : 'none',
-                                backgroundSize: 'cover',
+                                backgroundSize: `${100 * backgroundScale}% ${100 * backgroundScale}%`,
                                 backgroundPosition: 'center',
                                 backgroundRepeat: 'no-repeat',
                                 opacity: backgroundOpacity,
@@ -1669,7 +1682,7 @@
                                         linear-gradient(to bottom, ${gridColor}${Math.round(gridOpacity * 255).toString(16).padStart(2, '0')} 1px, transparent 1px)
                                     `,
                                     backgroundSize: `${gridSize}px ${gridSize}px`,
-                                    zIndex: 0
+                                    zIndex: 1
                                 }} />
                             )}
 
