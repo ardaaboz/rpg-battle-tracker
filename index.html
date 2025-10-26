@@ -173,6 +173,8 @@
             const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
             const [resizingChar, setResizingChar] = useState(null);
             const [resizeStart, setResizeStart] = useState({ size: 0, mouseX: 0, mouseY: 0 });
+            const [rotatingChar, setRotatingChar] = useState(null);
+            const [rotateStart, setRotateStart] = useState({ angle: 0, rotation: 0 });
             const [currentTurn, setCurrentTurn] = useState(0);
             const [notes, setNotes] = useState('');
             const [history, setHistory] = useState([]);
@@ -322,8 +324,8 @@
                 trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>',
                 edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>',
                 heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>',
-                maximize: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>',
-                rotate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path></svg>',
+                maximize: '<svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>',
+                rotate: '<svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path></svg>',
                 arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>',
                 ruler: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16M4 20L20 4M4 8l4-4M8 4l4 4M12 8l4-4M16 4l4 4M4 16l4-4M8 12l4 4M12 16l4-4M16 12l4 4"></path></svg>',
                 skull: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.11"></path><circle cx="9" cy="8" r="1" fill="currentColor"></circle><circle cx="15" cy="8" r="1" fill="currentColor"></circle></svg>',
@@ -381,9 +383,19 @@
                 }
 
                 // Calculate screen center in world coordinates
+                // Account for transform-origin: center center
                 const battlefield = battlefieldRef.current;
-                const screenCenterX = battlefield ? (battlefield.offsetWidth / 2 - panOffset.x) / zoomLevel : 400;
-                const screenCenterY = battlefield ? (battlefield.offsetHeight / 2 - panOffset.y) / zoomLevel : 300;
+                if (battlefield) {
+                    const rect = battlefield.getBoundingClientRect();
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    // At the visual center, the world coordinate is:
+                    var screenCenterX = centerX - panOffset.x / zoomLevel + 5000;
+                    var screenCenterY = centerY - panOffset.y / zoomLevel + 5000;
+                } else {
+                    var screenCenterX = 5400;
+                    var screenCenterY = 5300;
+                }
 
                 // Auto-generate name for structures based on icon
                 let characterName = formData.name;
@@ -649,8 +661,8 @@
              * Updates character position, panning, or resizing based on active mode
              */
             const handleMouseMove = (e) => {
-                // Handle eraser drawing
-                if (currentEraserPath.length > 0 && drawingMode === 'eraser') {
+                // Handle eraser drawing (from eraser tool OR right-click drag)
+                if (currentEraserPath.length > 0 && (drawingMode === 'eraser' || e.buttons === 2)) {
                     const rect = battlefieldRef.current.getBoundingClientRect();
                     const screenX = e.clientX - rect.left;
                     const screenY = e.clientY - rect.top;
@@ -753,6 +765,29 @@
                     setCharacters(characters.map(char =>
                         char.id === resizingChar
                             ? { ...char, size: newSize }
+                            : char
+                    ));
+                    return;
+                }
+
+                // Handle token rotation
+                if (rotatingChar) {
+                    // Calculate current angle from center to mouse
+                    const dx = e.clientX - rotateStart.centerX;
+                    const dy = e.clientY - rotateStart.centerY;
+                    const currentAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+                    // Calculate rotation delta
+                    const angleDelta = currentAngle - rotateStart.angle;
+                    let newRotation = rotateStart.rotation + angleDelta;
+
+                    // Normalize to 0-360 range
+                    while (newRotation < 0) newRotation += 360;
+                    while (newRotation >= 360) newRotation -= 360;
+
+                    setCharacters(characters.map(char =>
+                        char.id === rotatingChar
+                            ? { ...char, rotation: newRotation }
                             : char
                     ));
                     return;
@@ -877,11 +912,12 @@
                 }
 
 
-                if (draggedChar || resizingChar) {
+                if (draggedChar || resizingChar || rotatingChar) {
                     saveHistory();
                 }
                 setDraggedChar(null);
                 setResizingChar(null);
+                setRotatingChar(null);
                 setIsPanning(false);
             };
 
@@ -898,7 +934,7 @@
             };
 
             /**
-             * Handle right-click on battlefield - does nothing, let drawings handle their own right-clicks
+             * Handle right-click on battlefield - acts like eraser tool
              */
             const handleBattlefieldRightClick = (e) => {
                 // Check if clicking on a token or interactive element
@@ -909,8 +945,22 @@
                     return; // Let token/context menu handle their own right-clicks
                 }
 
-                // Right-clicks on empty battlefield do nothing - just prevent default context menu
+                // Prevent default context menu
                 e.preventDefault();
+
+                // Right-click acts like eraser - start eraser stroke
+                if (e.button === 2) { // Right mouse button
+                    const rect = battlefieldRef.current.getBoundingClientRect();
+                    const screenX = e.clientX - rect.left;
+                    const screenY = e.clientY - rect.top;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const worldX = ((screenX - centerX) / zoomLevel) + centerX - panOffset.x / zoomLevel + 5000;
+                    const worldY = ((screenY - centerY) / zoomLevel) + centerY - panOffset.y / zoomLevel + 5000;
+
+                    saveHistory();
+                    setCurrentEraserPath([{ x: worldX, y: worldY, size: eraserSize }]);
+                }
             };
 
             /**
@@ -930,16 +980,34 @@
             };
 
             /**
-             * Handle rotation button click - rotate by 15 degrees
+             * Handle rotation drag start - calculate initial angle
              * @param {MouseEvent} e - Mouse event
              * @param {object} char - Character to rotate
              */
-            const handleRotateClick = (e, char) => {
+            const handleRotateStart = (e, char) => {
                 e.stopPropagation();
                 e.preventDefault();
-                const currentRotation = char.rotation || 0;
-                const newRotation = (currentRotation + 15) % 360;
-                updateCharacter(char.id, { rotation: newRotation });
+
+                // Get character center position
+                const tokenElement = e.target.closest('.token');
+                if (!tokenElement) return;
+
+                const rect = tokenElement.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                // Calculate initial angle from center to mouse
+                const dx = e.clientX - centerX;
+                const dy = e.clientY - centerY;
+                const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+                setRotatingChar(char.id);
+                setRotateStart({
+                    angle: angle,
+                    rotation: char.rotation || 0,
+                    centerX: centerX,
+                    centerY: centerY
+                });
             };
 
             // ========== CONTEXT MENU ==========
@@ -2088,7 +2156,10 @@
                                             (() => {
                                                 const dx = currentDrawing.endX - currentDrawing.startX;
                                                 const dy = currentDrawing.endY - currentDrawing.startY;
-                                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                                const distancePx = Math.sqrt(dx * dx + dy * dy);
+                                                const feet = distancePx / 40; // 80px = 2ft, so 1ft = 40px
+                                                const inches = feet * 12;
+                                                const meters = feet * 0.3048;
                                                 const midX = (currentDrawing.startX + currentDrawing.endX) / 2;
                                                 const midY = (currentDrawing.startY + currentDrawing.endY) / 2;
                                                 return (
@@ -2106,14 +2177,16 @@
                                                         <circle cx={currentDrawing.endX} cy={currentDrawing.endY} r="5" fill="#fbbf24" />
                                                         <text
                                                             x={midX}
-                                                            y={midY - 10}
+                                                            y={midY - 25}
                                                             fill="#fbbf24"
-                                                            fontSize="20"
+                                                            fontSize="18"
                                                             fontWeight="bold"
                                                             textAnchor="middle"
-                                                            style={{ textShadow: '0 0 3px black, 0 0 3px black' }}
+                                                            stroke="black"
+                                                            strokeWidth="3"
+                                                            paintOrder="stroke"
                                                         >
-                                                            {Math.round(distance)}px
+                                                            {feet.toFixed(1)}ft / {inches.toFixed(0)}in / {meters.toFixed(2)}m
                                                         </text>
                                                     </g>
                                                 );
@@ -2306,7 +2379,7 @@
                                         {char.type === 'structure' && (
                                             <div
                                                 className="rotate-handle"
-                                                onClick={(e) => handleRotateClick(e, char)}
+                                                onMouseDown={(e) => handleRotateStart(e, char)}
                                                 style={{
                                                     position: 'absolute',
                                                     top: '-12px',
@@ -2316,7 +2389,7 @@
                                                     background: 'rgba(168, 85, 247, 0.9)',
                                                     border: '2px solid rgba(168, 85, 247, 1)',
                                                     borderRadius: '50%',
-                                                    cursor: 'pointer',
+                                                    cursor: 'grab',
                                                     zIndex: 10,
                                                     opacity: 0,
                                                     transition: 'opacity 0.2s',
