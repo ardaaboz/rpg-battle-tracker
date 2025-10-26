@@ -520,8 +520,9 @@
                 const isToken = e.target.closest('.token');
                 const isContextMenu = e.target.closest('.context-menu');
                 const isToolbar = e.target.closest('.toolbar');
+                const isFloatingNotes = e.target.closest('.floating-notes');
 
-                if (isToken || isContextMenu || isToolbar) {
+                if (isToken || isContextMenu || isToolbar || isFloatingNotes) {
                     return; // Don't pan when clicking on these elements
                 }
 
@@ -529,8 +530,9 @@
                 if (drawingMode) {
                     const rect = battlefieldRef.current.getBoundingClientRect();
                     // Transform screen coordinates to world coordinates accounting for zoom and pan
-                    const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel;
-                    const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel;
+                    // Add 5000 offset to match SVG positioning
+                    const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel + 5000;
+                    const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel + 5000;
 
                     if (drawingMode === 'freehand') {
                         setCurrentDrawing({
@@ -596,8 +598,9 @@
                 // Handle freehand drawing
                 if (currentDrawing && drawingMode === 'freehand') {
                     const rect = battlefieldRef.current.getBoundingClientRect();
-                    const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel;
-                    const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel;
+                    // Add 5000 offset to match SVG positioning
+                    const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel + 5000;
+                    const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel + 5000;
 
                     setCurrentDrawing({
                         ...currentDrawing,
@@ -1295,9 +1298,9 @@
                                                     </span>
                                                     <button
                                                         style={{
-                                                            background: 'rgba(239, 68, 68, 0.3)',
-                                                            border: '1px solid #ef4444',
-                                                            color: '#fca5a5',
+                                                            background: 'rgba(99, 102, 241, 0.3)',
+                                                            border: '1px solid #6366f1',
+                                                            color: '#a78bfa',
                                                             padding: '4px 10px',
                                                             borderRadius: '4px',
                                                             cursor: 'pointer',
@@ -1309,7 +1312,7 @@
                                                             setCurrentDrawing(null);
                                                         }}
                                                     >
-                                                        Exit
+                                                        ← Back
                                                     </button>
                                                 </div>
 
@@ -2381,14 +2384,29 @@
                                     <div
                                         className="context-menu-item"
                                         onClick={() => {
-                                            if (confirm(`Remove ${currentChar.name} from initiative order? (They will stay on the battlefield)`)) {
-                                                saveHistory();
-                                                updateCharacter(currentChar.id, { initiative: null });
+                                            if (currentChar.initiative !== null && currentChar.initiative !== undefined) {
+                                                // Character has initiative - remove it
+                                                if (confirm(`Remove ${currentChar.name} from initiative order? (They will stay on the battlefield)`)) {
+                                                    saveHistory();
+                                                    updateCharacter(currentChar.id, { initiative: null });
+                                                }
+                                            } else {
+                                                // Character doesn't have initiative - add it
+                                                const init = prompt(`Enter initiative for ${currentChar.name}:`);
+                                                if (init !== null && init.trim() !== '') {
+                                                    const initiative = parseInt(init);
+                                                    if (!isNaN(initiative)) {
+                                                        saveHistory();
+                                                        updateCharacter(currentChar.id, { initiative });
+                                                    } else {
+                                                        alert('Please enter a valid number');
+                                                    }
+                                                }
                                             }
                                         }}
                                     >
-                                        <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.pause }} />
-                                        Remove from Initiative
+                                        <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: currentChar.initiative !== null && currentChar.initiative !== undefined ? uiIcons.pause : uiIcons.play }} />
+                                        {currentChar.initiative !== null && currentChar.initiative !== undefined ? 'Remove from Initiative' : 'Add to Initiative'}
                                     </div>
                                     <div
                                         className="context-menu-item danger"
