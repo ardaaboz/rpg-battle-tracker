@@ -211,6 +211,7 @@
             const [sidebarVisible, setSidebarVisible] = useState(true);
             const [galleryImages, setGalleryImages] = useState([]); // {id, url, name, type: 'character'|'background'}
             const [galleryVisible, setGalleryVisible] = useState(false);
+            const [galleryContext, setGalleryContext] = useState(null); // { type: 'newCharacter' | 'editCharacter' | 'background', charId?: string }
 
             // Form data for adding new characters
             const [formData, setFormData] = useState({
@@ -1099,18 +1100,18 @@
                             {formData.type !== 'structure' && (
                                 <div className="input-group">
                                     <label>Image (optional)</label>
-                                    <div className="file-input-wrapper">
-                                        <input
-                                            type="file"
-                                            id="charImage"
-                                            accept="image/*"
-                                            onChange={handleImageUpload}
-                                        />
-                                        <label htmlFor="charImage" className="file-input-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                                            <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: formData.image ? uiIcons.check : uiIcons.image }} />
-                                            {formData.image ? 'Image Selected' : 'Upload Image'}
-                                        </label>
-                                    </div>
+                                    <button
+                                        type="button"
+                                        className="file-input-label"
+                                        onClick={() => {
+                                            setGalleryContext({ type: 'newCharacter' });
+                                            setGalleryVisible(true);
+                                        }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', width: '100%', cursor: 'pointer' }}
+                                    >
+                                        <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: formData.image ? uiIcons.check : uiIcons.image }} />
+                                        {formData.image ? 'Image Selected' : 'Select from Gallery'}
+                                    </button>
                                 </div>
                             )}
                             <button className="btn btn-primary" onClick={addCharacter}>
@@ -1136,27 +1137,18 @@
                             {backgroundImage === 'custom' && (
                                 <div className="input-group">
                                     <label>Upload Background</label>
-                                    <div className="file-input-wrapper">
-                                        <input
-                                            type="file"
-                                            id="backgroundUpload"
-                                            accept="image/*"
-                                            onChange={(e) => {
-                                                const file = e.target.files[0];
-                                                if (file) {
-                                                    const reader = new FileReader();
-                                                    reader.onload = (event) => {
-                                                        setCustomBackgroundImage(event.target.result);
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                }
-                                            }}
-                                        />
-                                        <label htmlFor="backgroundUpload" className="file-input-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                                            <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: customBackgroundImage ? uiIcons.check : uiIcons.image }} />
-                                            {customBackgroundImage ? 'Custom Background Set' : 'Upload Image'}
-                                        </label>
-                                    </div>
+                                    <button
+                                        type="button"
+                                        className="file-input-label"
+                                        onClick={() => {
+                                            setGalleryContext({ type: 'background' });
+                                            setGalleryVisible(true);
+                                        }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', width: '100%', cursor: 'pointer' }}
+                                    >
+                                        <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: customBackgroundImage ? uiIcons.check : uiIcons.image }} />
+                                        {customBackgroundImage ? 'Custom Background Set' : 'Select from Gallery'}
+                                    </button>
                                 </div>
                             )}
                             <div className="input-group">
@@ -1261,11 +1253,14 @@
                         <div className="section">
                             <button
                                 className="btn btn-secondary"
-                                onClick={() => setGalleryVisible(!galleryVisible)}
+                                onClick={() => {
+                                    setGalleryContext(null); // No context = browse mode
+                                    setGalleryVisible(!galleryVisible);
+                                }}
                                 style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}
                             >
                                 <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.image }} />
-                                Image Gallery ({galleryImages.length})
+                                Manage Gallery ({galleryImages.length})
                             </button>
                         </div>
                     </div>
@@ -2077,7 +2072,15 @@
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                        <h2 style={{ margin: 0, color: '#a78bfa' }}>Image Gallery</h2>
+                                        <div>
+                                            <h2 style={{ margin: 0, color: '#a78bfa' }}>Image Gallery</h2>
+                                            <p style={{ margin: '5px 0 0 0', fontSize: '13px', color: '#888' }}>
+                                                {galleryContext?.type === 'newCharacter' && 'Select an image for new character'}
+                                                {galleryContext?.type === 'editCharacter' && 'Select an image to change character portrait'}
+                                                {galleryContext?.type === 'background' && 'Select a background image'}
+                                                {!galleryContext && 'Manage your images - Upload, browse, or delete'}
+                                            </p>
+                                        </div>
                                         <span
                                             style={{
                                                 cursor: 'pointer',
@@ -2086,7 +2089,10 @@
                                                 color: '#999',
                                                 transition: 'color 0.2s'
                                             }}
-                                            onClick={() => setGalleryVisible(false)}
+                                            onClick={() => {
+                                                setGalleryVisible(false);
+                                                setGalleryContext(null);
+                                            }}
                                             onMouseOver={(e) => e.target.style.color = '#fff'}
                                             onMouseOut={(e) => e.target.style.color = '#999'}
                                         >
@@ -2103,23 +2109,40 @@
                                             multiple
                                             onChange={(e) => {
                                                 const files = Array.from(e.target.files);
-                                                files.forEach(file => {
+                                                const file = files[0]; // Use first file for immediate selection
+                                                if (file) {
                                                     const reader = new FileReader();
                                                     reader.onload = (event) => {
                                                         const newImage = {
                                                             id: Date.now() + Math.random(),
                                                             url: event.target.result,
                                                             name: file.name,
-                                                            type: 'character' // Default type
+                                                            type: 'character'
                                                         };
-                                                        setGalleryImages([...galleryImages, newImage]);
-                                                        // Save to localStorage
-                                                        const saved = JSON.parse(localStorage.getItem('battleMapGallery') || '[]');
-                                                        saved.push(newImage);
-                                                        localStorage.setItem('battleMapGallery', JSON.stringify(saved));
+
+                                                        // Add to gallery
+                                                        const updatedGallery = [...galleryImages, newImage];
+                                                        setGalleryImages(updatedGallery);
+                                                        localStorage.setItem('battleMapGallery', JSON.stringify(updatedGallery));
+
+                                                        // If there's a context, immediately use this image
+                                                        if (galleryContext) {
+                                                            if (galleryContext.type === 'newCharacter' || galleryContext.type === 'editCharacter') {
+                                                                setCropperState({
+                                                                    image: event.target.result,
+                                                                    charId: galleryContext.type === 'newCharacter' ? 'new' : galleryContext.charId,
+                                                                    scale: 1,
+                                                                    position: { x: 0, y: 0 }
+                                                                });
+                                                                setGalleryVisible(false);
+                                                            } else if (galleryContext.type === 'background') {
+                                                                setCustomBackgroundImage(event.target.result);
+                                                                setGalleryVisible(false);
+                                                            }
+                                                        }
                                                     };
                                                     reader.readAsDataURL(file);
-                                                });
+                                                }
                                                 e.target.value = ''; // Reset input
                                             }}
                                             style={{ display: 'none' }}
@@ -2163,7 +2186,7 @@
                                                         borderRadius: '8px',
                                                         overflow: 'hidden',
                                                         border: '2px solid rgba(255, 255, 255, 0.2)',
-                                                        cursor: 'pointer',
+                                                        cursor: galleryContext ? 'pointer' : 'default',
                                                         transition: 'all 0.2s'
                                                     }}
                                                     onMouseOver={(e) => {
@@ -2175,9 +2198,33 @@
                                                         e.currentTarget.style.transform = 'scale(1)';
                                                     }}
                                                     onClick={() => {
-                                                        // Copy URL to clipboard for use
-                                                        navigator.clipboard.writeText(image.url);
-                                                        alert('Image URL copied! Paste it into character image field.');
+                                                        // Handle image selection based on context
+                                                        if (galleryContext) {
+                                                            if (galleryContext.type === 'newCharacter') {
+                                                                // For new character: open cropper
+                                                                setCropperState({
+                                                                    image: image.url,
+                                                                    charId: 'new',
+                                                                    scale: 1,
+                                                                    position: { x: 0, y: 0 }
+                                                                });
+                                                                setGalleryVisible(false);
+                                                            } else if (galleryContext.type === 'editCharacter') {
+                                                                // For editing existing character: open cropper
+                                                                setCropperState({
+                                                                    image: image.url,
+                                                                    charId: galleryContext.charId,
+                                                                    scale: 1,
+                                                                    position: { x: 0, y: 0 }
+                                                                });
+                                                                setGalleryVisible(false);
+                                                            } else if (galleryContext.type === 'background') {
+                                                                // For background: directly apply
+                                                                setCustomBackgroundImage(image.url);
+                                                                setGalleryVisible(false);
+                                                            }
+                                                        }
+                                                        // If no context (browse mode), do nothing on click
                                                     }}
                                                 >
                                                     <img
@@ -2496,35 +2543,16 @@
                                         Rename
                                     </div>
                                     {currentChar.type !== 'structure' && (
-                                        <div className="context-menu-item">
-                                            <label htmlFor={`change-image-${currentChar.id}`} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-                                                <input
-                                                    type="file"
-                                                    id={`change-image-${currentChar.id}`}
-                                                    accept="image/*"
-                                                    style={{ display: 'none' }}
-                                                    onChange={(e) => {
-                                                        const file = e.target.files[0];
-                                                        if (file) {
-                                                            const reader = new FileReader();
-                                                            reader.onload = (event) => {
-                                                                // Open cropper with image
-                                                                setCropperState({
-                                                                    image: event.target.result,
-                                                                    charId: currentChar.id,
-                                                                    scale: 1,
-                                                                    position: { x: 0, y: 0 }
-                                                                });
-                                                                setContextMenu(null); // Close context menu
-                                                            };
-                                                            reader.readAsDataURL(file);
-                                                        }
-                                                        e.target.value = ''; // Reset input
-                                                    }}
-                                                />
-                                                <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.image }} />
-                                                Change Image
-                                            </label>
+                                        <div
+                                            className="context-menu-item"
+                                            onClick={() => {
+                                                setGalleryContext({ type: 'editCharacter', charId: currentChar.id });
+                                                setGalleryVisible(true);
+                                                setContextMenu(null); // Close context menu
+                                            }}
+                                        >
+                                            <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.image }} />
+                                            Change Image
                                         </div>
                                     )}
                                     {currentChar.type === 'structure' && (
