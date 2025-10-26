@@ -145,6 +145,8 @@
             const [gallerySortBy, setGallerySortBy] = useState('date'); // 'date' or 'name'
             const [galleryFolders, setGalleryFolders] = useState([]); // {id, name, category: 'character'|'background'}
             const [selectedFolderId, setSelectedFolderId] = useState(null); // Currently viewing folder
+            const [dragOverGallery, setDragOverGallery] = useState(false); // Drag over upload zone
+            const [draggedImage, setDraggedImage] = useState(null); // Image being dragged to folder
             const [copiedCharacter, setCopiedCharacter] = useState(null); // For copy/paste
             const [selectedCharacter, setSelectedCharacter] = useState(null); // Currently selected character for copy
 
@@ -3038,8 +3040,74 @@
                                         </div>
                                     </div>
 
-                                    {/* Upload Button */}
-                                    <div className="file-input-wrapper" style={{ marginBottom: '20px' }}>
+                                    {/* Upload Button with Drag & Drop Zone */}
+                                    <div
+                                        className="file-input-wrapper"
+                                        style={{
+                                            marginBottom: '20px',
+                                            border: dragOverGallery ? '2px dashed #6366f1' : '2px dashed rgba(99, 102, 241, 0.3)',
+                                            borderRadius: '8px',
+                                            padding: '20px',
+                                            background: dragOverGallery ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setDragOverGallery(true);
+                                        }}
+                                        onDragLeave={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setDragOverGallery(false);
+                                        }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setDragOverGallery(false);
+
+                                            const files = Array.from(e.dataTransfer.files);
+                                            if (files.length === 0) return;
+
+                                            // Determine category
+                                            const imageCategory = galleryContext?.type === 'background' ? 'background' :
+                                                                 galleryContext?.type === 'manage' ? galleryCategory :
+                                                                 'character';
+
+                                            // Process dropped files
+                                            const newImages = [];
+                                            let loadedCount = 0;
+
+                                            files.forEach((file, index) => {
+                                                if (!file.type.startsWith('image/')) return;
+
+                                                const reader = new FileReader();
+                                                reader.onload = (event) => {
+                                                    newImages.push({
+                                                        id: Date.now() + Math.random() + index,
+                                                        url: event.target.result,
+                                                        name: file.name,
+                                                        type: imageCategory,
+                                                        dateAdded: Date.now(),
+                                                        folderId: selectedFolderId
+                                                    });
+
+                                                    loadedCount++;
+                                                    if (loadedCount === files.filter(f => f.type.startsWith('image/')).length) {
+                                                        const updatedGallery = [...galleryImages, ...newImages];
+                                                        setGalleryImages(updatedGallery);
+                                                        localStorage.setItem('battleMapGallery', JSON.stringify(updatedGallery));
+                                                    }
+                                                };
+                                                reader.readAsDataURL(file);
+                                            });
+                                        }}
+                                    >
+                                        <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                                            <div style={{ fontSize: '14px', color: '#888', marginBottom: '10px' }}>
+                                                Drag and drop images here, or click to browse
+                                            </div>
+                                        </div>
                                         <input
                                             type="file"
                                             id="galleryUpload"
@@ -3133,7 +3201,7 @@
                                                 cursor: 'pointer'
                                             }}
                                         >
-                                            <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.image }} />
+                                            <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.upload }} />
                                             Upload Images
                                         </label>
                                     </div>
@@ -3182,24 +3250,66 @@
                                                 {currentFolders.map(folder => (
                                                     <div
                                                         key={folder.id}
-                                                        onClick={() => setSelectedFolderId(folder.id)}
+                                                        onClick={() => {
+                                                            if (!draggedImage) {
+                                                                setSelectedFolderId(folder.id);
+                                                            }
+                                                        }}
+                                                        onDragOver={(e) => {
+                                                            if (draggedImage) {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                e.currentTarget.style.background = 'rgba(99, 102, 241, 0.4)';
+                                                                e.currentTarget.style.borderColor = '#6366f1';
+                                                                e.currentTarget.style.transform = 'scale(1.05)';
+                                                            }
+                                                        }}
+                                                        onDragLeave={(e) => {
+                                                            if (draggedImage) {
+                                                                e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+                                                                e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+                                                                e.currentTarget.style.transform = 'scale(1)';
+                                                            }
+                                                        }}
+                                                        onDrop={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+
+                                                            if (draggedImage) {
+                                                                // Move image to this folder
+                                                                const updatedImages = galleryImages.map(img =>
+                                                                    img.id === draggedImage.id ? { ...img, folderId: folder.id } : img
+                                                                );
+                                                                setGalleryImages(updatedImages);
+                                                                localStorage.setItem('battleMapGallery', JSON.stringify(updatedImages));
+                                                                setDraggedImage(null);
+
+                                                                e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+                                                                e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+                                                                e.currentTarget.style.transform = 'scale(1)';
+                                                            }
+                                                        }}
                                                         style={{
                                                             padding: '15px',
                                                             background: 'rgba(99, 102, 241, 0.1)',
                                                             border: '2px solid rgba(99, 102, 241, 0.3)',
                                                             borderRadius: '8px',
-                                                            cursor: 'pointer',
+                                                            cursor: draggedImage ? 'copy' : 'pointer',
                                                             textAlign: 'center',
                                                             transition: 'all 0.2s',
                                                             position: 'relative'
                                                         }}
                                                         onMouseOver={(e) => {
-                                                            e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)';
-                                                            e.currentTarget.style.borderColor = '#6366f1';
+                                                            if (!draggedImage) {
+                                                                e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)';
+                                                                e.currentTarget.style.borderColor = '#6366f1';
+                                                            }
                                                         }}
                                                         onMouseOut={(e) => {
-                                                            e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
-                                                            e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+                                                            if (!draggedImage) {
+                                                                e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+                                                                e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+                                                            }
                                                         }}
                                                     >
                                                         <div style={{ fontSize: '32px', marginBottom: '5px', width: '32px', height: '32px', margin: '0 auto 5px', color: '#6366f1' }} dangerouslySetInnerHTML={{ __html: uiIcons.folder }} />
@@ -3276,22 +3386,35 @@
                                             {filteredGalleryImages.map((image) => (
                                                 <div
                                                     key={image.id}
+                                                    draggable={galleryContext?.type === 'manage' && selectedFolderId === null}
+                                                    onDragStart={(e) => {
+                                                        if (galleryContext?.type === 'manage' && selectedFolderId === null) {
+                                                            setDraggedImage(image);
+                                                            e.dataTransfer.effectAllowed = 'move';
+                                                        }
+                                                    }}
+                                                    onDragEnd={() => setDraggedImage(null)}
                                                     style={{
                                                         position: 'relative',
                                                         aspectRatio: '1',
                                                         borderRadius: '8px',
                                                         overflow: 'hidden',
-                                                        border: '2px solid rgba(255, 255, 255, 0.2)',
+                                                        border: draggedImage?.id === image.id ? '2px solid #6366f1' : '2px solid rgba(255, 255, 255, 0.2)',
                                                         cursor: galleryContext ? 'pointer' : 'default',
-                                                        transition: 'all 0.2s'
+                                                        transition: 'all 0.2s',
+                                                        opacity: draggedImage?.id === image.id ? 0.5 : 1
                                                     }}
                                                     onMouseOver={(e) => {
-                                                        e.currentTarget.style.borderColor = '#6366f1';
-                                                        e.currentTarget.style.transform = 'scale(1.05)';
+                                                        if (!draggedImage) {
+                                                            e.currentTarget.style.borderColor = '#6366f1';
+                                                            e.currentTarget.style.transform = 'scale(1.05)';
+                                                        }
                                                     }}
                                                     onMouseOut={(e) => {
-                                                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                        if (!draggedImage) {
+                                                            e.currentTarget.style.borderColor = draggedImage?.id === image.id ? '#6366f1' : 'rgba(255, 255, 255, 0.2)';
+                                                            e.currentTarget.style.transform = 'scale(1)';
+                                                        }
                                                     }}
                                                     onClick={() => {
                                                         // Handle image selection based on context
