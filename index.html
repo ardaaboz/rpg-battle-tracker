@@ -440,17 +440,23 @@
              * Keeps last 10 states
              */
             const saveHistory = () => {
-                setHistory([...history.slice(-9), JSON.parse(JSON.stringify(characters))]);
+                setHistory([...history.slice(-9), {
+                    characters: JSON.parse(JSON.stringify(characters)),
+                    drawings: JSON.parse(JSON.stringify(drawings))
+                }]);
             };
 
             /**
              * Undo last action
-             * Restores previous character state
+             * Restores previous character and drawing state
              */
             const undo = () => {
                 if (history.length > 0) {
                     const previous = history[history.length - 1];
-                    setCharacters(previous);
+                    setCharacters(previous.characters || previous); // Support old format
+                    if (previous.drawings) {
+                        setDrawings(previous.drawings);
+                    }
                     setHistory(history.slice(0, -1));
                 }
             };
@@ -543,15 +549,14 @@
                             brushSize: brushSize
                         });
                     } else if (drawingMode === 'circle') {
-                        // Place circle at clicked location with configured radius
-                        setDrawings([...drawings, {
+                        // Start circle drawing - store start point
+                        setCurrentDrawing({
                             type: 'circle',
-                            cx: worldX,
-                            cy: worldY,
-                            radius: circleRadius,
+                            startX: worldX,
+                            startY: worldY,
                             color: drawingColor,
                             opacity: drawingOpacity
-                        }]);
+                        });
                     } else if (drawingMode === 'polygon') {
                         if (!currentDrawing) {
                             // Start new polygon
@@ -605,6 +610,20 @@
                     setCurrentDrawing({
                         ...currentDrawing,
                         points: [...currentDrawing.points, { x: worldX, y: worldY }]
+                    });
+                    return;
+                }
+
+                // Handle circle drawing
+                if (currentDrawing && drawingMode === 'circle') {
+                    const rect = battlefieldRef.current.getBoundingClientRect();
+                    const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel + 5000;
+                    const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel + 5000;
+
+                    setCurrentDrawing({
+                        ...currentDrawing,
+                        endX: worldX,
+                        endY: worldY
                     });
                     return;
                 }
@@ -664,7 +683,36 @@
             const handleMouseUp = () => {
                 // Finish freehand drawing
                 if (currentDrawing && drawingMode === 'freehand') {
+                    saveHistory(); // Save to undo history
                     setDrawings([...drawings, currentDrawing]);
+                    setCurrentDrawing(null);
+                    return;
+                }
+
+                // Finish circle drawing (Paint-style: bounding rectangle)
+                if (currentDrawing && drawingMode === 'circle' && currentDrawing.endX && currentDrawing.endY) {
+                    const minX = Math.min(currentDrawing.startX, currentDrawing.endX);
+                    const maxX = Math.max(currentDrawing.startX, currentDrawing.endX);
+                    const minY = Math.min(currentDrawing.startY, currentDrawing.endY);
+                    const maxY = Math.max(currentDrawing.startY, currentDrawing.endY);
+
+                    const width = maxX - minX;
+                    const height = maxY - minY;
+                    const cx = minX + width / 2;
+                    const cy = minY + height / 2;
+                    const rx = width / 2;
+                    const ry = height / 2;
+
+                    saveHistory(); // Save to undo history
+                    setDrawings([...drawings, {
+                        type: 'ellipse',
+                        cx,
+                        cy,
+                        rx,
+                        ry,
+                        color: currentDrawing.color,
+                        opacity: currentDrawing.opacity
+                    }]);
                     setCurrentDrawing(null);
                     return;
                 }
@@ -683,6 +731,7 @@
             const handleBattlefieldDoubleClick = (e) => {
                 if (drawingMode === 'polygon' && currentDrawing && currentDrawing.points.length >= 3) {
                     // Finish the polygon
+                    saveHistory(); // Save to undo history
                     setDrawings([...drawings, currentDrawing]);
                     setCurrentDrawing(null);
                 }
@@ -1248,6 +1297,23 @@
                                                     <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.polygon }} />
                                                     Polygon
                                                 </div>
+                                                <div
+                                                    style={{
+                                                        padding: '10px 16px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '13px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px',
+                                                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.3)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    onClick={() => setDrawingMode('eraser')}
+                                                >
+                                                    <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.eraser }} />
+                                                    Eraser
+                                                </div>
                                                 {drawings.length > 0 && (
                                                     <div
                                                         style={{
@@ -1268,6 +1334,7 @@
                                                         }}
                                                         onClick={() => {
                                                             if (confirm('Clear all drawings?')) {
+                                                                saveHistory(); // Save to undo history
                                                                 setDrawings([]);
                                                             }
                                                         }}
@@ -1295,6 +1362,7 @@
                                                         {drawingMode === 'freehand' && 'Freehand Draw'}
                                                         {drawingMode === 'circle' && 'Circle Tool'}
                                                         {drawingMode === 'polygon' && 'Polygon Tool'}
+                                                        {drawingMode === 'eraser' && 'Eraser Tool'}
                                                     </span>
                                                     <button
                                                         style={{
@@ -1365,27 +1433,14 @@
                                                     )}
 
                                                     {drawingMode === 'circle' && (
-                                                        <div style={{ marginBottom: '14px' }}>
-                                                            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#999' }}>
-                                                                Radius (pixels)
-                                                            </label>
-                                                            <input
-                                                                type="number"
-                                                                min="10"
-                                                                max="500"
-                                                                step="5"
-                                                                value={circleRadius}
-                                                                onChange={(e) => setCircleRadius(parseInt(e.target.value) || 50)}
-                                                                style={{
-                                                                    width: '100%',
-                                                                    padding: '8px',
-                                                                    background: 'rgba(0, 0, 0, 0.4)',
-                                                                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                                                                    borderRadius: '4px',
-                                                                    color: 'white',
-                                                                    fontSize: '14px'
-                                                                }}
-                                                            />
+                                                        <div style={{
+                                                            padding: '10px',
+                                                            background: 'rgba(99, 102, 241, 0.1)',
+                                                            borderRadius: '6px',
+                                                            fontSize: '12px',
+                                                            color: '#a78bfa'
+                                                        }}>
+                                                            Click and drag to create an ellipse. The start and end points define the bounding rectangle.
                                                         </div>
                                                     )}
 
@@ -1398,6 +1453,18 @@
                                                             color: '#a78bfa'
                                                         }}>
                                                             Click on battlefield to add points. Double-click to finish.
+                                                        </div>
+                                                    )}
+
+                                                    {drawingMode === 'eraser' && (
+                                                        <div style={{
+                                                            padding: '10px',
+                                                            background: 'rgba(99, 102, 241, 0.1)',
+                                                            borderRadius: '6px',
+                                                            fontSize: '12px',
+                                                            color: '#a78bfa'
+                                                        }}>
+                                                            Click on any drawing to remove it.
                                                         </div>
                                                     )}
                                                 </div>
@@ -1476,13 +1543,27 @@
                                     left: '-5000px',
                                     width: '10000px',
                                     height: '10000px',
-                                    pointerEvents: 'none',
+                                    pointerEvents: drawingMode === 'eraser' ? 'auto' : 'none',
                                     zIndex: 5,
                                     overflow: 'visible'
                                 }}
                             >
                                 {/* Render completed drawings */}
                                 {drawings.map((drawing, index) => {
+                                    const handleDrawingClick = (e) => {
+                                        if (drawingMode === 'eraser') {
+                                            e.stopPropagation();
+                                            saveHistory(); // Save to undo history
+                                            setDrawings(drawings.filter((_, i) => i !== index));
+                                        }
+                                    };
+
+                                    const commonProps = {
+                                        onClick: handleDrawingClick,
+                                        style: { cursor: drawingMode === 'eraser' ? 'pointer' : 'default' },
+                                        pointerEvents: drawingMode === 'eraser' ? 'auto' : 'none'
+                                    };
+
                                     if (drawing.type === 'freehand') {
                                         const pathData = drawing.points.map((point, i) =>
                                             i === 0 ? `M ${point.x} ${point.y}` : `L ${point.x} ${point.y}`
@@ -1498,6 +1579,7 @@
                                                 strokeLinejoin="round"
                                                 fill="none"
                                                 opacity={drawing.opacity}
+                                                {...commonProps}
                                             />
                                         );
                                     } else if (drawing.type === 'circle') {
@@ -1511,6 +1593,22 @@
                                                 strokeWidth={3}
                                                 fill={drawing.color}
                                                 opacity={drawing.opacity}
+                                                {...commonProps}
+                                            />
+                                        );
+                                    } else if (drawing.type === 'ellipse') {
+                                        return (
+                                            <ellipse
+                                                key={index}
+                                                cx={drawing.cx}
+                                                cy={drawing.cy}
+                                                rx={drawing.rx}
+                                                ry={drawing.ry}
+                                                stroke={drawing.color}
+                                                strokeWidth={3}
+                                                fill={drawing.color}
+                                                opacity={drawing.opacity}
+                                                {...commonProps}
                                             />
                                         );
                                     } else if (drawing.type === 'polygon') {
@@ -1523,6 +1621,7 @@
                                                 strokeWidth={3}
                                                 fill={drawing.color}
                                                 opacity={drawing.opacity}
+                                                {...commonProps}
                                             />
                                         );
                                     }
@@ -1544,6 +1643,32 @@
                                                 fill="none"
                                                 opacity={currentDrawing.opacity}
                                             />
+                                        )}
+                                        {currentDrawing.type === 'circle' && currentDrawing.endX && currentDrawing.endY && (
+                                            (() => {
+                                                const minX = Math.min(currentDrawing.startX, currentDrawing.endX);
+                                                const maxX = Math.max(currentDrawing.startX, currentDrawing.endX);
+                                                const minY = Math.min(currentDrawing.startY, currentDrawing.endY);
+                                                const maxY = Math.max(currentDrawing.startY, currentDrawing.endY);
+                                                const width = maxX - minX;
+                                                const height = maxY - minY;
+                                                const cx = minX + width / 2;
+                                                const cy = minY + height / 2;
+                                                const rx = width / 2;
+                                                const ry = height / 2;
+                                                return (
+                                                    <ellipse
+                                                        cx={cx}
+                                                        cy={cy}
+                                                        rx={rx}
+                                                        ry={ry}
+                                                        stroke={currentDrawing.color}
+                                                        strokeWidth={3}
+                                                        fill={currentDrawing.color}
+                                                        opacity={currentDrawing.opacity}
+                                                    />
+                                                );
+                                            })()
                                         )}
                                         {currentDrawing.type === 'polygon' && currentDrawing.points.length > 0 && (
                                             <>
