@@ -382,23 +382,12 @@
                     hp = 0;
                 }
 
-                // Calculate screen center in world coordinates
-                // With transform-origin: center center, the center of the viewport maps to:
-                // worldCoord = (0 - panOffset) / zoomLevel + 5000
-                // Since viewport center is at (width/2, height/2) in screen space,
-                // we need: worldCoord = ((viewportCenter - viewportCenter) / zoomLevel) + viewportCenter - panOffset / zoomLevel + 5000
-                // which simplifies to: worldCoord = viewportCenter - panOffset / zoomLevel + 5000
-                const battlefield = battlefieldRef.current;
-                if (battlefield) {
-                    const rect = battlefield.getBoundingClientRect();
-                    const viewportCenterX = rect.width / 2;
-                    const viewportCenterY = rect.height / 2;
-                    var screenCenterX = (-panOffset.x / zoomLevel) + 5000;
-                    var screenCenterY = (-panOffset.y / zoomLevel) + 5000;
-                } else {
-                    var screenCenterX = 5000;
-                    var screenCenterY = 5000;
-                }
+                // Calculate spawn position at viewport center
+                // Tokens use content-layer coordinates (NOT SVG coordinates with +5000 offset)
+                // With transform-origin: center center on the content layer,
+                // the viewport center maps to: -panOffset / zoomLevel in content-layer space
+                var screenCenterX = -panOffset.x / zoomLevel;
+                var screenCenterY = -panOffset.y / zoomLevel;
 
                 // Auto-generate name for structures based on icon
                 let characterName = formData.name;
