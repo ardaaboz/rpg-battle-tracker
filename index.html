@@ -597,7 +597,27 @@
                     const worldX = ((screenX - centerX) / zoomLevel) + centerX - panOffset.x / zoomLevel + 5000;
                     const worldY = ((screenY - centerY) / zoomLevel) + centerY - panOffset.y / zoomLevel + 5000;
 
-                    setCurrentEraserPath([...currentEraserPath, { x: worldX, y: worldY, size: eraserSize }]);
+                    // Interpolate points between last point and current point to fill gaps
+                    const lastPoint = currentEraserPath[currentEraserPath.length - 1];
+                    const newPoints = [];
+
+                    // Calculate distance between last and current point
+                    const dx = worldX - lastPoint.x;
+                    const dy = worldY - lastPoint.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    // Add interpolated points every 5 pixels to ensure smooth coverage
+                    const steps = Math.ceil(distance / 5);
+                    for (let i = 1; i <= steps; i++) {
+                        const t = i / steps;
+                        newPoints.push({
+                            x: lastPoint.x + dx * t,
+                            y: lastPoint.y + dy * t,
+                            size: eraserSize
+                        });
+                    }
+
+                    setCurrentEraserPath([...currentEraserPath, ...newPoints]);
                     return;
                 }
 
@@ -1214,7 +1234,79 @@
 
                         {/* Add Character Section */}
                         <div className="section">
-                            <div className="section-title">Add Character</div>
+                            <div className="section-title">{formData.type === 'structure' ? 'Add Structure' : 'Add Character'}</div>
+
+                            {/* Type selector as buttons */}
+                            <div className="input-group">
+                                <label>Type</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, type: 'ally' })}
+                                        style={{
+                                            padding: '10px',
+                                            background: formData.type === 'ally' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.1)',
+                                            border: formData.type === 'ally' ? '2px solid #10b981' : '2px solid rgba(255,255,255,0.2)',
+                                            borderRadius: '6px',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            fontWeight: formData.type === 'ally' ? '600' : '400',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        Ally
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, type: 'enemy' })}
+                                        style={{
+                                            padding: '10px',
+                                            background: formData.type === 'enemy' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255,255,255,0.1)',
+                                            border: formData.type === 'enemy' ? '2px solid #ef4444' : '2px solid rgba(255,255,255,0.2)',
+                                            borderRadius: '6px',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            fontWeight: formData.type === 'enemy' ? '600' : '400',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        Enemy
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, type: 'neutral' })}
+                                        style={{
+                                            padding: '10px',
+                                            background: formData.type === 'neutral' ? 'rgba(251, 191, 36, 0.3)' : 'rgba(255,255,255,0.1)',
+                                            border: formData.type === 'neutral' ? '2px solid #fbbf24' : '2px solid rgba(255,255,255,0.2)',
+                                            borderRadius: '6px',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            fontWeight: formData.type === 'neutral' ? '600' : '400',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        Neutral
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, type: 'structure' })}
+                                        style={{
+                                            padding: '10px',
+                                            background: formData.type === 'structure' ? 'rgba(139, 92, 246, 0.3)' : 'rgba(255,255,255,0.1)',
+                                            border: formData.type === 'structure' ? '2px solid #8b5cf6' : '2px solid rgba(255,255,255,0.2)',
+                                            borderRadius: '6px',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            fontWeight: formData.type === 'structure' ? '600' : '400',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        Structure
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Only show name input if not structure */}
                             {formData.type !== 'structure' && (
                                 <div className="input-group">
@@ -1227,18 +1319,6 @@
                                     />
                                 </div>
                             )}
-                            <div className="input-group">
-                                <label>Type</label>
-                                <select
-                                    value={formData.type}
-                                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                >
-                                    <option value="ally">Ally</option>
-                                    <option value="enemy">Enemy</option>
-                                    <option value="neutral">Neutral</option>
-                                    <option value="structure">Structure</option>
-                                </select>
-                            </div>
                             {/* Icon and Color picker for structures */}
                             {formData.type === 'structure' && (
                                 <div>
@@ -1345,8 +1425,25 @@
                                 </div>
                             )}
                             <button className="btn btn-primary" onClick={addCharacter}>
-                                ➕ Add Character
+                                ➕ {formData.type === 'structure' ? 'Add Structure' : 'Add Character'}
                             </button>
+
+                            {/* Keyboard shortcuts tip */}
+                            <div style={{
+                                marginTop: '10px',
+                                padding: '10px',
+                                background: 'rgba(99, 102, 241, 0.1)',
+                                border: '1px solid rgba(99, 102, 241, 0.3)',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                color: '#a78bfa',
+                                lineHeight: '1.6'
+                            }}>
+                                <strong>💡 Tips:</strong><br/>
+                                • <kbd>Ctrl+C</kbd> / <kbd>Ctrl+V</kbd> - Copy/Paste selected character<br/>
+                                • <kbd>Ctrl+Z</kbd> - Undo last action<br/>
+                                • Right-click - Erase drawings
+                            </div>
                         </div>
 
                         {/* Background Settings */}
