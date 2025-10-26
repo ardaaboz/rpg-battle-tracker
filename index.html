@@ -203,8 +203,10 @@
             const [brushSize, setBrushSize] = useState(3);
             const [circleRadius, setCircleRadius] = useState(50); // Radius for circle tool in pixels
             const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false); // Tools dropdown visibility
-            const [eraserActive, setEraserActive] = useState(false); // Track if actively erasing
-            const [erasedIndices, setErasedIndices] = useState(new Set()); // Track erased drawing indices
+            const [eraserSize, setEraserSize] = useState(20); // Eraser brush size
+            const [eraserMasks, setEraserMasks] = useState({}); // { drawingIndex: [{x, y, size}...] }
+            const [currentEraserPath, setCurrentEraserPath] = useState([]); // Current erasing stroke
+            const [activeEraserDrawing, setActiveEraserDrawing] = useState(null); // Which drawing is being erased
             const [panStart, setPanStart] = useState({ x: 0, y: 0 });
             const [sidebarVisible, setSidebarVisible] = useState(true);
             const [galleryImages, setGalleryImages] = useState([]); // {id, url, name, type: 'character'|'background'}
@@ -447,7 +449,8 @@
             const saveHistory = () => {
                 setHistory([...history.slice(-9), {
                     characters: JSON.parse(JSON.stringify(characters)),
-                    drawings: JSON.parse(JSON.stringify(drawings))
+                    drawings: JSON.parse(JSON.stringify(drawings)),
+                    eraserMasks: JSON.parse(JSON.stringify(eraserMasks))
                 }]);
             };
 
@@ -461,6 +464,9 @@
                     setCharacters(previous.characters || previous); // Support old format
                     if (previous.drawings) {
                         setDrawings(previous.drawings);
+                    }
+                    if (previous.eraserMasks) {
+                        setEraserMasks(previous.eraserMasks);
                     }
                     setHistory(history.slice(0, -1));
                 }
@@ -545,7 +551,12 @@
                     const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel + 5000;
                     const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel + 5000;
 
-                    if (drawingMode === 'freehand') {
+                    if (drawingMode === 'eraser') {
+                        // Start eraser stroke
+                        saveHistory(); // Save to undo history on first erase
+                        setCurrentEraserPath([{ x: worldX, y: worldY, size: eraserSize }]);
+                        return;
+                    } else if (drawingMode === 'freehand') {
                         setCurrentDrawing({
                             type: 'freehand',
                             points: [{ x: worldX, y: worldY }],
@@ -605,6 +616,16 @@
              * Updates character position, panning, or resizing based on active mode
              */
             const handleMouseMove = (e) => {
+                // Handle eraser drawing
+                if (currentEraserPath.length > 0 && drawingMode === 'eraser') {
+                    const rect = battlefieldRef.current.getBoundingClientRect();
+                    const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel + 5000;
+                    const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel + 5000;
+
+                    setCurrentEraserPath([...currentEraserPath, { x: worldX, y: worldY, size: eraserSize }]);
+                    return;
+                }
+
                 // Handle freehand drawing
                 if (currentDrawing && drawingMode === 'freehand') {
                     const rect = battlefieldRef.current.getBoundingClientRect();
@@ -686,6 +707,45 @@
              * Saves history if character was moved or resized
              */
             const handleMouseUp = () => {
+                // Finish eraser stroke - apply eraser path to all drawings it intersects
+                if (currentEraserPath.length > 0 && drawingMode === 'eraser') {
+                    // Apply eraser path to all drawings it intersects
+                    const updatedMasks = { ...eraserMasks };
+
+                    drawings.forEach((drawing, index) => {
+                        // Check if eraser path intersects this drawing
+                        const intersects = currentEraserPath.some(eraserPoint => {
+                            // Simple bounding box check for performance
+                            if (drawing.type === 'freehand') {
+                                return drawing.points.some(point =>
+                                    Math.abs(point.x - eraserPoint.x) < eraserSize / 2 &&
+                                    Math.abs(point.y - eraserPoint.y) < eraserSize / 2
+                                );
+                            } else if (drawing.type === 'ellipse') {
+                                const dx = eraserPoint.x - drawing.cx;
+                                const dy = eraserPoint.y - drawing.cy;
+                                return (dx * dx) / (drawing.rx * drawing.rx) + (dy * dy) / (drawing.ry * drawing.ry) <= 1;
+                            } else if (drawing.type === 'polygon') {
+                                // Simple point-in-polygon or nearby check
+                                return drawing.points.some(point =>
+                                    Math.abs(point.x - eraserPoint.x) < eraserSize / 2 &&
+                                    Math.abs(point.y - eraserPoint.y) < eraserSize / 2
+                                );
+                            }
+                            return false;
+                        });
+
+                        if (intersects) {
+                            // Add eraser path to this drawing's mask
+                            updatedMasks[index] = [...(updatedMasks[index] || []), ...currentEraserPath];
+                        }
+                    });
+
+                    setEraserMasks(updatedMasks);
+                    setCurrentEraserPath([]);
+                    return;
+                }
+
                 // Finish freehand drawing
                 if (currentDrawing && drawingMode === 'freehand') {
                     saveHistory(); // Save to undo history
@@ -722,13 +782,6 @@
                     return;
                 }
 
-                // Finish eraser drag - remove all erased drawings
-                if (eraserActive && erasedIndices.size > 0) {
-                    setDrawings(drawings.filter((_, i) => !erasedIndices.has(i)));
-                    setErasedIndices(new Set());
-                    setEraserActive(false);
-                    return;
-                }
 
                 if (draggedChar || resizingChar) {
                     saveHistory();
@@ -736,7 +789,6 @@
                 setDraggedChar(null);
                 setResizingChar(null);
                 setIsPanning(false);
-                setEraserActive(false);
             };
 
             /**
@@ -1504,15 +1556,31 @@
                                                     )}
 
                                                     {drawingMode === 'eraser' && (
-                                                        <div style={{
-                                                            padding: '10px',
-                                                            background: 'rgba(99, 102, 241, 0.1)',
-                                                            borderRadius: '6px',
-                                                            fontSize: '12px',
-                                                            color: '#a78bfa'
-                                                        }}>
-                                                            Click and drag to erase drawings. Right-click any drawing to erase it instantly.
-                                                        </div>
+                                                        <>
+                                                            <div style={{ marginBottom: '14px' }}>
+                                                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#999' }}>
+                                                                    Eraser Size: {eraserSize}px
+                                                                </label>
+                                                                <input
+                                                                    type="range"
+                                                                    min="5"
+                                                                    max="50"
+                                                                    step="5"
+                                                                    value={eraserSize}
+                                                                    onChange={(e) => setEraserSize(parseInt(e.target.value))}
+                                                                    style={{ width: '100%' }}
+                                                                />
+                                                            </div>
+                                                            <div style={{
+                                                                padding: '10px',
+                                                                background: 'rgba(99, 102, 241, 0.1)',
+                                                                borderRadius: '6px',
+                                                                fontSize: '12px',
+                                                                color: '#a78bfa'
+                                                            }}>
+                                                                Click and drag to erase parts of drawings like a paintbrush. Right-click any drawing to erase it completely.
+                                                            </div>
+                                                        </>
                                                     )}
                                                 </div>
                                             </>
@@ -1595,44 +1663,40 @@
                                     overflow: 'visible'
                                 }}
                             >
+                                {/* SVG Masks for eraser */}
+                                <defs>
+                                    {Object.entries(eraserMasks).map(([drawingIndex, masks]) => (
+                                        <mask key={`mask-${drawingIndex}`} id={`eraser-mask-${drawingIndex}`}>
+                                            {/* White rectangle covers everything (visible) */}
+                                            <rect x="-5000" y="-5000" width="20000" height="20000" fill="white" />
+                                            {/* Black circles hide parts (erased areas) */}
+                                            {masks.map((mask, i) => (
+                                                <circle key={i} cx={mask.x} cy={mask.y} r={mask.size / 2} fill="black" />
+                                            ))}
+                                        </mask>
+                                    ))}
+                                </defs>
+
                                 {/* Render completed drawings */}
                                 {drawings.map((drawing, index) => {
-                                    const handleDrawingMouseDown = (e) => {
-                                        if (drawingMode === 'eraser') {
-                                            e.stopPropagation();
-                                            if (!eraserActive) {
-                                                saveHistory(); // Save to undo history only on first erase
-                                            }
-                                            setEraserActive(true);
-                                            setErasedIndices(prev => new Set([...prev, index]));
-                                        }
-                                    };
-
-                                    const handleDrawingMouseEnter = (e) => {
-                                        if (drawingMode === 'eraser' && eraserActive && e.buttons === 1) {
-                                            // If mouse button is down while entering, mark for erasure
-                                            setErasedIndices(prev => new Set([...prev, index]));
-                                        }
-                                    };
-
                                     const handleDrawingRightClick = (e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         saveHistory(); // Save to undo history
                                         setDrawings(drawings.filter((_, i) => i !== index));
+                                        // Also remove eraser masks for this drawing
+                                        setEraserMasks(prev => {
+                                            const newMasks = { ...prev };
+                                            delete newMasks[index];
+                                            return newMasks;
+                                        });
                                     };
 
-                                    // Don't render if erased
-                                    if (erasedIndices.has(index)) {
-                                        return null;
-                                    }
-
                                     const commonProps = {
-                                        onMouseDown: handleDrawingMouseDown,
-                                        onMouseEnter: handleDrawingMouseEnter,
                                         onContextMenu: handleDrawingRightClick,
-                                        style: { cursor: drawingMode === 'eraser' ? 'pointer' : 'default' },
-                                        pointerEvents: drawingMode === 'eraser' ? 'auto' : 'auto' // Always allow right-click
+                                        style: { cursor: drawingMode === 'eraser' ? 'crosshair' : 'default' },
+                                        pointerEvents: 'auto',
+                                        mask: eraserMasks[index] ? `url(#eraser-mask-${index})` : undefined
                                     };
 
                                     if (drawing.type === 'freehand') {
@@ -1762,6 +1826,23 @@
                                                 ))}
                                             </>
                                         )}
+                                    </>
+                                )}
+
+                                {/* Render current eraser path */}
+                                {currentEraserPath.length > 0 && (
+                                    <>
+                                        {currentEraserPath.map((point, i) => (
+                                            <circle
+                                                key={i}
+                                                cx={point.x}
+                                                cy={point.y}
+                                                r={point.size / 2}
+                                                fill="rgba(255, 0, 0, 0.3)"
+                                                stroke="rgba(255, 0, 0, 0.6)"
+                                                strokeWidth="1"
+                                            />
+                                        ))}
                                     </>
                                 )}
                             </svg>
