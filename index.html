@@ -1131,7 +1131,11 @@
                             <div className="section-title">Characters ({characters.length})</div>
                             <div className="character-list">
                                 {characters.map(char => (
-                                    <div key={char.id} className="character-item">
+                                    <div
+                                        key={char.id}
+                                        className="character-item"
+                                        onContextMenu={(e) => handleRightClick(e, char)}
+                                    >
                                         <span>{char.name}</span>
                                         <span style={{ fontSize: '12px', color: '#888' }}>
                                             {char.type === 'ally' ? `${char.hp}/${char.maxHp} HP` : char.type}
@@ -2568,6 +2572,7 @@
                                         className={`initiative-card ${char.type} ${index === currentTurn ? 'current-turn' : ''} ${draggedInitiativeIndex === index ? 'dragging' : ''} ${draggedInitiativeIndex !== null && draggedInitiativeIndex !== index ? 'drag-target' : ''}`}
                                         draggable
                                         onClick={() => setCurrentTurn(index)}
+                                        onContextMenu={(e) => handleRightClick(e, char)}
                                         onDragStart={(e) => {
                                             setDraggedInitiativeIndex(index);
                                             e.dataTransfer.effectAllowed = 'move';
