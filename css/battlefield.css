@@ -225,7 +225,7 @@
  */
 .token-info {
     position: absolute;
-    bottom: calc(var(--token-size, 80px) * -0.65); /* 65% of token size below */
+    bottom: calc(var(--token-size, 80px) * -0.55); /* 55% of token size below */
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.9);
