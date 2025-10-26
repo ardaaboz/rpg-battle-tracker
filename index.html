@@ -1738,40 +1738,25 @@
                                             </button>
                                             <button className="hp-btn damage" onClick={(e) => {
                                                 e.stopPropagation();
-                                                const log = currentChar.damageLog || [];
-                                                const total = log.reduce((a, b) => a + b, 0);
-                                                if (total > 0) {
-                                                    saveHistory();
-                                                    const newLog = [...log, -0.25];
-                                                    const newTotal = newLog.reduce((a, b) => a + b, 0);
-                                                    updateCharacter(currentChar.id, { damageLog: newTotal > 0 ? newLog : [] });
-                                                }
+                                                saveHistory();
+                                                const newLog = [...(currentChar.damageLog || []), -0.25];
+                                                updateCharacter(currentChar.id, { damageLog: newLog });
                                             }}>
                                                 -0.25
                                             </button>
                                             <button className="hp-btn damage" onClick={(e) => {
                                                 e.stopPropagation();
-                                                const log = currentChar.damageLog || [];
-                                                const total = log.reduce((a, b) => a + b, 0);
-                                                if (total > 0) {
-                                                    saveHistory();
-                                                    const newLog = [...log, -0.5];
-                                                    const newTotal = newLog.reduce((a, b) => a + b, 0);
-                                                    updateCharacter(currentChar.id, { damageLog: newTotal > 0 ? newLog : [] });
-                                                }
+                                                saveHistory();
+                                                const newLog = [...(currentChar.damageLog || []), -0.5];
+                                                updateCharacter(currentChar.id, { damageLog: newLog });
                                             }}>
                                                 -0.5
                                             </button>
                                             <button className="hp-btn damage" onClick={(e) => {
                                                 e.stopPropagation();
-                                                const log = currentChar.damageLog || [];
-                                                const total = log.reduce((a, b) => a + b, 0);
-                                                if (total > 0) {
-                                                    saveHistory();
-                                                    const newLog = [...log, -1];
-                                                    const newTotal = newLog.reduce((a, b) => a + b, 0);
-                                                    updateCharacter(currentChar.id, { damageLog: newTotal > 0 ? newLog : [] });
-                                                }
+                                                saveHistory();
+                                                const newLog = [...(currentChar.damageLog || []), -1];
+                                                updateCharacter(currentChar.id, { damageLog: newLog });
                                             }}>
                                                 -1
                                             </button>
