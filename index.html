@@ -1636,27 +1636,30 @@
                             onDoubleClick={handleBattlefieldDoubleClick}
                         >
                             {/* Background image layer - pans with content */}
-                            <div style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: '100%',
-                                height: '100%',
-                                backgroundImage: backgroundImage !== 'none' && backgroundImage !== 'custom'
-                                    ? `url(${backgrounds[backgroundImage].image})`
-                                    : backgroundImage === 'custom'
-                                    ? `url(${customBackgroundImage})`
-                                    : 'none',
-                                backgroundSize: `${100 / backgroundScale}% ${100 / backgroundScale}%`,
-                                backgroundPosition: 'center',
-                                backgroundRepeat: 'no-repeat',
-                                opacity: backgroundOpacity,
-                                pointerEvents: 'none',
-                                zIndex: 0,
-                                transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-                                transformOrigin: 'center center',
-                                transition: isPanning ? 'none' : 'transform 0.2s ease'
-                            }} />
+                            {(backgroundImage !== 'none') && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    pointerEvents: 'none',
+                                    zIndex: 0,
+                                    transform: `translate(-50%, -50%) translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel * backgroundScale})`,
+                                    transformOrigin: 'center center',
+                                    transition: isPanning ? 'none' : 'transform 0.2s ease'
+                                }}>
+                                    <img
+                                        src={backgroundImage !== 'custom'
+                                            ? backgrounds[backgroundImage].image
+                                            : customBackgroundImage}
+                                        style={{
+                                            display: 'block',
+                                            maxWidth: 'none',
+                                            opacity: backgroundOpacity
+                                        }}
+                                        alt="Background"
+                                    />
+                                </div>
+                            )}
 
                             {/* Content layer - contains all tokens */}
                             <div style={{
