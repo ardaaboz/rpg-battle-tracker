@@ -20,15 +20,18 @@
     bottom: 0;
     left: 320px; /* Matches sidebar width */
     right: 0;
-    background: rgba(20, 20, 30, 0.95);
-    border-top: 2px solid #444;
-    padding: 12px 20px;
+    background: linear-gradient(to top, rgba(15, 15, 25, 0.98), rgba(20, 20, 30, 0.95));
+    border-top: 3px solid transparent;
+    border-image: linear-gradient(to right, #6366f1, #8b5cf6, #ec4899);
+    border-image-slice: 1;
+    padding: 16px 24px;
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 20px;
     z-index: 1000;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5), 0 -2px 8px rgba(99, 102, 241, 0.2);
     transition: left 0.3s ease;
+    backdrop-filter: blur(12px);
 }
 
 .initiative-bottom.sidebar-hidden {
@@ -40,12 +43,16 @@
  * "Initiative Order" label on the left
  */
 .initiative-bottom-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #a78bfa;
+    font-size: 15px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #a78bfa, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     white-space: nowrap;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
+    text-shadow: 0 2px 8px rgba(167, 139, 250, 0.3);
 }
 
 /* ==================== Scroll Container ==================== */
@@ -63,17 +70,21 @@
 }
 
 .initiative-scroll-container::-webkit-scrollbar {
-    height: 6px;
+    height: 8px;
 }
 
 .initiative-scroll-container::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
 }
 
 .initiative-scroll-container::-webkit-scrollbar-thumb {
-    background: rgba(99, 102, 241, 0.5);
-    border-radius: 3px;
+    background: linear-gradient(to right, #6366f1, #8b5cf6);
+    border-radius: 4px;
+}
+
+.initiative-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to right, #818cf8, #a78bfa);
 }
 
 /* ==================== Initiative Cards ==================== */
