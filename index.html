@@ -199,8 +199,8 @@
             const [drawingMode, setDrawingMode] = useState(null); // 'freehand', 'circle', 'polygon', null
             const [drawings, setDrawings] = useState([]); // Array of drawing objects
             const [currentDrawing, setCurrentDrawing] = useState(null); // Drawing in progress
-            const [drawingColor, setDrawingColor] = useState('#ff0000');
-            const [drawingOpacity, setDrawingOpacity] = useState(0.5);
+            const [drawingColor, setDrawingColor] = useState('#ffffff');
+            const [drawingOpacity, setDrawingOpacity] = useState(1);
             const [brushSize, setBrushSize] = useState(3);
             const [circleRadius, setCircleRadius] = useState(50); // Radius for circle tool in pixels
             const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false); // Tools dropdown visibility
@@ -222,7 +222,7 @@
                 maxHp: '',
                 image: '',
                 structureIcon: 'castle',
-                structureColor: '#8b5cf6'
+                structureColor: '#ffffff'
             });
 
             // Ref for battlefield DOM element
@@ -402,20 +402,21 @@
                     damageLog: [],
                     ...(formData.type === 'structure' && {
                         structureIcon: formData.structureIcon || 'castle',
-                        structureColor: formData.structureColor || '#8b5cf6'
+                        structureColor: formData.structureColor || '#ffffff'
                     })
                 };
 
                 saveHistory();
                 setCharacters([newChar, ...characters]);
+                // Keep the type selected, reset other fields
                 setFormData({
                     name: '',
-                    type: 'ally',
+                    type: formData.type, // Remember the type
                     hp: '',
                     maxHp: '',
                     image: '',
-                    structureIcon: 'castle',
-                    structureColor: '#8b5cf6'
+                    structureIcon: formData.structureIcon, // Remember structure settings
+                    structureColor: formData.structureColor
                 });
             };
 
@@ -1040,7 +1041,7 @@
                                                         borderRadius: '6px',
                                                         background: formData.structureIcon === iconKey ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)',
                                                         transition: 'all 0.2s',
-                                                        color: formData.structureColor || '#8b5cf6'
+                                                        color: formData.structureColor || '#ffffff'
                                                     }}
                                                     onMouseEnter={(e) => {
                                                         if (formData.structureIcon !== iconKey) {
@@ -1064,7 +1065,7 @@
                                         <label>Color</label>
                                         <input
                                             type="color"
-                                            value={formData.structureColor || '#8b5cf6'}
+                                            value={formData.structureColor || '#ffffff'}
                                             onChange={(e) => setFormData({ ...formData, structureColor: e.target.value })}
                                             style={{ width: '100%', height: '40px', cursor: 'pointer' }}
                                         />
@@ -1125,33 +1126,19 @@
                             <div className="section-title">Background</div>
                             <div className="input-group">
                                 <label>Background Image</label>
-                                <select
-                                    value={backgroundImage}
-                                    onChange={(e) => setBackgroundImage(e.target.value)}
+                                <button
+                                    type="button"
+                                    className="file-input-label"
+                                    onClick={() => {
+                                        setGalleryContext({ type: 'background' });
+                                        setGalleryVisible(true);
+                                    }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', width: '100%', cursor: 'pointer', color: 'white' }}
                                 >
-                                    {Object.entries(backgrounds).map(([key, bg]) => (
-                                        <option key={key} value={key}>{bg.name}</option>
-                                    ))}
-                                </select>
+                                    <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: customBackgroundImage ? uiIcons.check : uiIcons.image }} />
+                                    {customBackgroundImage ? 'Background Set' : 'Select from Gallery'}
+                                </button>
                             </div>
-                            {/* Custom background upload */}
-                            {backgroundImage === 'custom' && (
-                                <div className="input-group">
-                                    <label>Upload Background</label>
-                                    <button
-                                        type="button"
-                                        className="file-input-label"
-                                        onClick={() => {
-                                            setGalleryContext({ type: 'background' });
-                                            setGalleryVisible(true);
-                                        }}
-                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', width: '100%', cursor: 'pointer', color: 'white' }}
-                                    >
-                                        <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: customBackgroundImage ? uiIcons.check : uiIcons.image }} />
-                                        {customBackgroundImage ? 'Custom Background Set' : 'Select from Gallery'}
-                                    </button>
-                                </div>
-                            )}
                             <div className="input-group">
                                 <label>Background Opacity: {backgroundOpacity.toFixed(2)}</label>
                                 <input
@@ -1636,7 +1623,7 @@
                             onDoubleClick={handleBattlefieldDoubleClick}
                         >
                             {/* Background image layer - pans with content */}
-                            {(backgroundImage !== 'none') && (
+                            {customBackgroundImage && (
                                 <div style={{
                                     position: 'absolute',
                                     top: '50%',
@@ -1648,9 +1635,7 @@
                                     transition: isPanning ? 'none' : 'transform 0.2s ease'
                                 }}>
                                     <img
-                                        src={backgroundImage !== 'custom'
-                                            ? backgrounds[backgroundImage].image
-                                            : customBackgroundImage}
+                                        src={customBackgroundImage}
                                         style={{
                                             display: 'block',
                                             maxWidth: 'none',
@@ -1978,9 +1963,7 @@
                                             <div
                                                 className="token-placeholder structure"
                                                 style={{
-                                                    borderColor: char.structureColor || '#8b5cf6',
-                                                    boxShadow: `0 0 20px ${char.structureColor || '#8b5cf6'}80, inset 0 0 20px ${char.structureColor || '#8b5cf6'}30`,
-                                                    color: char.structureColor || '#8b5cf6'
+                                                    color: char.structureColor || '#ffffff'
                                                 }}
                                                 dangerouslySetInnerHTML={{
                                                     __html: structureIcons[char.structureIcon] || structureIcons.castle
@@ -2608,7 +2591,7 @@
                                                                 borderRadius: '4px',
                                                                 background: currentChar.structureIcon === iconKey ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)',
                                                                 transition: 'all 0.2s',
-                                                                color: currentChar.structureColor || '#8b5cf6'
+                                                                color: currentChar.structureColor || '#ffffff'
                                                             }}
                                                             onMouseEnter={(e) => {
                                                                 if (currentChar.structureIcon !== iconKey) {
@@ -2632,7 +2615,7 @@
                                                     <input
                                                         type="color"
                                                         id={`structure-color-${currentChar.id}`}
-                                                        value={currentChar.structureColor || '#8b5cf6'}
+                                                        value={currentChar.structureColor || '#ffffff'}
                                                         onChange={(e) => {
                                                             updateCharacter(currentChar.id, { structureColor: e.target.value });
                                                         }}
@@ -3074,7 +3057,7 @@
                                                 <div
                                                     className="placeholder"
                                                     style={{
-                                                        borderColor: char.structureColor || '#8b5cf6',
+                                                        borderColor: char.structureColor || '#ffffff',
                                                         fontSize: '24px'
                                                     }}
                                                 >

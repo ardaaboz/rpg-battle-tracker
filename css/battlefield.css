@@ -196,11 +196,12 @@
     border-width: 6px;
 }
 
-/* Structure - Custom color border (set via inline style) */
+/* Structure - No circle, no background (just the icon) */
 .token.structure .token-placeholder {
-    background: rgba(30, 30, 50, 0.9);
-    border-width: 6px;
-    /* Border color and shadow set via inline style */
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 /* ==================== HP Ring ==================== */
