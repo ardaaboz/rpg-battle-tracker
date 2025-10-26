@@ -92,6 +92,7 @@
             const [gridColor, setGridColor] = useState('#ffffff'); // Default white
             const [gridOpacity, setGridOpacity] = useState(0.2); // Default 20% opacity
             const [showDamagePermanently, setShowDamagePermanently] = useState(false); // Toggle for showing damage on enemies
+            const [showSpellsPermanently, setShowSpellsPermanently] = useState(false); // Toggle for showing spells on allies
             const [contextMenu, setContextMenu] = useState(null);
             const [draggedChar, setDraggedChar] = useState(null);
             const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -344,6 +345,9 @@
                     isDead: false,
                     statuses: [],
                     damageLog: [],
+                    ...(formData.type === 'ally' && formData.spells && formData.spells.length > 0 && {
+                        spells: formData.spells
+                    }),
                     ...(formData.type === 'structure' && {
                         structureIcon: formData.structureIcon || 'castle',
                         structureColor: formData.structureColor || '#ffffff',
@@ -360,6 +364,9 @@
                     hp: '',
                     maxHp: '',
                     image: '',
+                    spells: [],
+                    currentSpellName: '',
+                    currentSpellDesc: '',
                     structureIcon: formData.structureIcon, // Remember structure settings
                     structureColor: formData.structureColor
                 });
@@ -769,7 +776,8 @@
              */
             const handleMouseUp = () => {
                 // Finish eraser stroke - apply eraser path to all drawings it intersects
-                if (currentEraserPath.length > 0 && drawingMode === 'eraser') {
+                // Check for eraser FIRST regardless of drawing mode (right-click can erase while in other modes)
+                if (currentEraserPath.length > 0) {
                     // Apply eraser path to all drawings it intersects
                     const updatedMasks = { ...eraserMasks };
 
@@ -792,6 +800,17 @@
                                     Math.abs(point.x - eraserPoint.x) < eraserSize / 2 &&
                                     Math.abs(point.y - eraserPoint.y) < eraserSize / 2
                                 );
+                            } else if (drawing.type === 'arrow') {
+                                // Check if eraser intersects the arrow line or head
+                                const dx = drawing.endX - drawing.startX;
+                                const dy = drawing.endY - drawing.startY;
+                                const lineLength = Math.sqrt(dx * dx + dy * dy);
+                                // Check distance from point to line segment
+                                const t = Math.max(0, Math.min(1, ((eraserPoint.x - drawing.startX) * dx + (eraserPoint.y - drawing.startY) * dy) / (lineLength * lineLength)));
+                                const projX = drawing.startX + t * dx;
+                                const projY = drawing.startY + t * dy;
+                                const distance = Math.sqrt((eraserPoint.x - projX) ** 2 + (eraserPoint.y - projY) ** 2);
+                                return distance < eraserSize / 2;
                             }
                             return false;
                         });
@@ -1141,7 +1160,7 @@
                             maxHp: 2,
                             initiative: 5,
                             image: 'uggnug.png',
-                            x: centerX - 120,
+                            x: centerX - 180,
                             y: centerY,
                             size: 80,
                             isDead: false,
@@ -1156,7 +1175,7 @@
                             maxHp: 2,
                             initiative: 4,
                             image: 'raizo.png',
-                            x: centerX - 60,
+                            x: centerX - 90,
                             y: centerY,
                             size: 80,
                             isDead: false,
@@ -1186,7 +1205,7 @@
                             maxHp: 2,
                             initiative: 2,
                             image: 'zaheed.png',
-                            x: centerX + 60,
+                            x: centerX + 90,
                             y: centerY,
                             size: 80,
                             isDead: false,
@@ -1201,7 +1220,7 @@
                             maxHp: 2,
                             initiative: 1,
                             image: 'william.png',
-                            x: centerX + 120,
+                            x: centerX + 180,
                             y: centerY,
                             size: 80,
                             isDead: false,
@@ -1407,6 +1426,106 @@
                                     </div>
                                 </div>
                             )}
+                            {/* Spell management for allies */}
+                            {formData.type === 'ally' && (
+                                <div className="input-group">
+                                    <label>Spells (optional)</label>
+                                    {formData.spells && formData.spells.map((spell, index) => (
+                                        <div key={index} style={{
+                                            background: 'rgba(99, 102, 241, 0.1)',
+                                            border: '1px solid rgba(99, 102, 241, 0.3)',
+                                            borderRadius: '6px',
+                                            padding: '8px',
+                                            marginBottom: '8px'
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                <strong style={{ color: '#a78bfa', fontSize: '12px' }}>{spell.name}</strong>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newSpells = formData.spells.filter((_, i) => i !== index);
+                                                        setFormData({ ...formData, spells: newSpells });
+                                                    }}
+                                                    style={{
+                                                        background: 'rgba(239, 68, 68, 0.3)',
+                                                        border: '1px solid #ef4444',
+                                                        borderRadius: '4px',
+                                                        color: 'white',
+                                                        padding: '2px 6px',
+                                                        fontSize: '10px',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: '#999' }}>{spell.description}</div>
+                                        </div>
+                                    ))}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Spell name"
+                                            value={formData.currentSpellName || ''}
+                                            onChange={(e) => setFormData({ ...formData, currentSpellName: e.target.value })}
+                                            style={{
+                                                padding: '6px',
+                                                background: 'rgba(0,0,0,0.3)',
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                borderRadius: '4px',
+                                                color: 'white',
+                                                fontSize: '12px'
+                                            }}
+                                        />
+                                        <textarea
+                                            placeholder="Spell description"
+                                            value={formData.currentSpellDesc || ''}
+                                            onChange={(e) => setFormData({ ...formData, currentSpellDesc: e.target.value })}
+                                            style={{
+                                                padding: '6px',
+                                                background: 'rgba(0,0,0,0.3)',
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                borderRadius: '4px',
+                                                color: 'white',
+                                                fontSize: '12px',
+                                                resize: 'vertical',
+                                                minHeight: '50px',
+                                                fontFamily: 'inherit'
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (formData.currentSpellName) {
+                                                    const newSpell = {
+                                                        name: formData.currentSpellName,
+                                                        description: formData.currentSpellDesc || ''
+                                                    };
+                                                    setFormData({
+                                                        ...formData,
+                                                        spells: [...(formData.spells || []), newSpell],
+                                                        currentSpellName: '',
+                                                        currentSpellDesc: ''
+                                                    });
+                                                }
+                                            }}
+                                            disabled={!formData.currentSpellName}
+                                            style={{
+                                                padding: '6px 12px',
+                                                background: formData.currentSpellName ? 'rgba(99, 102, 241, 0.3)' : 'rgba(100,100,100,0.2)',
+                                                border: '1px solid ' + (formData.currentSpellName ? 'rgba(99, 102, 241, 0.5)' : 'rgba(255,255,255,0.1)'),
+                                                borderRadius: '4px',
+                                                color: 'white',
+                                                fontSize: '11px',
+                                                cursor: formData.currentSpellName ? 'pointer' : 'not-allowed',
+                                                fontWeight: '600'
+                                            }}
+                                        >
+                                            + Add Spell
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                             {formData.type !== 'structure' && (
                                 <div className="input-group">
                                     <label>Image (optional)</label>
@@ -1608,6 +1727,14 @@
                             >
                                 <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.explosion }} />
                                 {showDamagePermanently ? 'Hide Damage' : 'Show Damage'}
+                            </button>
+                            <button
+                                className={`toolbar-btn ${showSpellsPermanently ? 'active' : ''}`}
+                                onClick={() => setShowSpellsPermanently(!showSpellsPermanently)}
+                                title="Show spells on all allies without hovering"
+                            >
+                                <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.sparkles }} />
+                                {showSpellsPermanently ? 'Hide Spells' : 'Show Spells'}
                             </button>
                             <button
                                 className="toolbar-btn"
@@ -2409,6 +2536,25 @@
                                                 <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold' }}>
                                                     Total: {char.damageLog.reduce((a, b) => a + b, 0)}
                                                 </div>
+                                            </div>
+                                        )}
+
+                                        {/* Spell Tooltip for Allies */}
+                                        {(hoveredChar === char.id || showSpellsPermanently) && char.type === 'ally' && char.spells && char.spells.length > 0 && (
+                                            <div className="damage-tooltip" style={{ borderColor: '#10b981' }}>
+                                                <div style={{ fontWeight: 'bold', marginBottom: '6px', color: '#6ee7b7' }}>
+                                                    Spells:
+                                                </div>
+                                                {char.spells.map((spell, idx) => (
+                                                    <div key={idx} style={{ padding: '6px 0', borderBottom: idx < char.spells.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+                                                        <div style={{ fontWeight: 'bold', color: '#a78bfa', marginBottom: '2px', fontSize: '11px' }}>
+                                                            {spell.name}
+                                                        </div>
+                                                        <div style={{ color: '#d1d5db', fontSize: '10px', lineHeight: '1.4' }}>
+                                                            {spell.description}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
 
