@@ -103,10 +103,11 @@
     user-select: none;
     transition: transform 0.1s, box-shadow 0.2s;
     z-index: 100;
+    transform: translate(-50%, -50%);
 }
 
 .token:hover {
-    transform: scale(1.05);
+    transform: translate(-50%, -50%) scale(1.05);
     z-index: 1000;
 }
 
@@ -311,10 +312,10 @@
  */
 .resize-handle {
     position: absolute;
-    bottom: -12px;
-    right: -12px;
-    width: 26px;
-    height: 26px;
+    bottom: -18px;
+    right: -18px;
+    width: 20px;
+    height: 20px;
     background: rgba(99, 102, 241, 0.9);
     border: 2px solid rgba(99, 102, 241, 1);
     border-radius: 50%;
@@ -325,15 +326,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 4px;
+    padding: 3px;
 }
 
 .rotate-handle {
     position: absolute;
-    top: -12px;
-    right: -12px;
-    width: 26px;
-    height: 26px;
+    top: -18px;
+    right: -18px;
+    width: 20px;
+    height: 20px;
     background: rgba(168, 85, 247, 0.9);
     border: 2px solid rgba(168, 85, 247, 1);
     border-radius: 50%;
@@ -344,7 +345,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 4px;
+    padding: 3px;
 }
 
 .token:hover .resize-handle,
