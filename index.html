@@ -200,6 +200,8 @@
             const [drawingColor, setDrawingColor] = useState('#ff0000');
             const [drawingOpacity, setDrawingOpacity] = useState(0.5);
             const [brushSize, setBrushSize] = useState(3);
+            const [circleRadius, setCircleRadius] = useState(50); // Radius for circle tool in pixels
+            const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false); // Tools dropdown visibility
             const [panStart, setPanStart] = useState({ x: 0, y: 0 });
             const [sidebarVisible, setSidebarVisible] = useState(true);
 
@@ -523,6 +525,51 @@
                     return; // Don't pan when clicking on these elements
                 }
 
+                // Handle drawing modes
+                if (drawingMode) {
+                    const rect = battlefieldRef.current.getBoundingClientRect();
+                    // Transform screen coordinates to world coordinates accounting for zoom and pan
+                    const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel;
+                    const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel;
+
+                    if (drawingMode === 'freehand') {
+                        setCurrentDrawing({
+                            type: 'freehand',
+                            points: [{ x: worldX, y: worldY }],
+                            color: drawingColor,
+                            opacity: drawingOpacity,
+                            brushSize: brushSize
+                        });
+                    } else if (drawingMode === 'circle') {
+                        // Place circle at clicked location with configured radius
+                        setDrawings([...drawings, {
+                            type: 'circle',
+                            cx: worldX,
+                            cy: worldY,
+                            radius: circleRadius,
+                            color: drawingColor,
+                            opacity: drawingOpacity
+                        }]);
+                    } else if (drawingMode === 'polygon') {
+                        if (!currentDrawing) {
+                            // Start new polygon
+                            setCurrentDrawing({
+                                type: 'polygon',
+                                points: [{ x: worldX, y: worldY }],
+                                color: drawingColor,
+                                opacity: drawingOpacity
+                            });
+                        } else {
+                            // Add point to existing polygon
+                            setCurrentDrawing({
+                                ...currentDrawing,
+                                points: [...currentDrawing.points, { x: worldX, y: worldY }]
+                            });
+                        }
+                    }
+                    return; // Don't pan when drawing
+                }
+
                 setIsPanning(true);
                 setPanStart({
                     x: e.clientX - panOffset.x,
@@ -546,6 +593,19 @@
              * Updates character position, panning, or resizing based on active mode
              */
             const handleMouseMove = (e) => {
+                // Handle freehand drawing
+                if (currentDrawing && drawingMode === 'freehand') {
+                    const rect = battlefieldRef.current.getBoundingClientRect();
+                    const worldX = (e.clientX - rect.left - panOffset.x) / zoomLevel;
+                    const worldY = (e.clientY - rect.top - panOffset.y) / zoomLevel;
+
+                    setCurrentDrawing({
+                        ...currentDrawing,
+                        points: [...currentDrawing.points, { x: worldX, y: worldY }]
+                    });
+                    return;
+                }
+
                 // Handle panning
                 if (isPanning) {
                     setPanOffset({
@@ -599,12 +659,30 @@
              * Saves history if character was moved or resized
              */
             const handleMouseUp = () => {
+                // Finish freehand drawing
+                if (currentDrawing && drawingMode === 'freehand') {
+                    setDrawings([...drawings, currentDrawing]);
+                    setCurrentDrawing(null);
+                    return;
+                }
+
                 if (draggedChar || resizingChar) {
                     saveHistory();
                 }
                 setDraggedChar(null);
                 setResizingChar(null);
                 setIsPanning(false);
+            };
+
+            /**
+             * Handle double-click to finish polygon
+             */
+            const handleBattlefieldDoubleClick = (e) => {
+                if (drawingMode === 'polygon' && currentDrawing && currentDrawing.points.length >= 3) {
+                    // Finish the polygon
+                    setDrawings([...drawings, currentDrawing]);
+                    setCurrentDrawing(null);
+                }
             };
 
             /**
@@ -1078,6 +1156,253 @@
                             >
                                 📝 {notesVisible ? 'Hide Notes' : 'Show Notes'}
                             </button>
+
+                            {/* Tools Dropdown */}
+                            <div style={{ position: 'relative' }}>
+                                <button
+                                    className={`toolbar-btn ${drawingMode ? 'active' : ''}`}
+                                    onClick={() => setToolsDropdownOpen(!toolsDropdownOpen)}
+                                >
+                                    <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.pen }} />
+                                    Tools
+                                </button>
+
+                                {toolsDropdownOpen && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '100%',
+                                        right: 0,
+                                        marginTop: '8px',
+                                        background: 'rgba(15, 15, 25, 0.98)',
+                                        border: '2px solid rgba(99, 102, 241, 0.5)',
+                                        borderRadius: '10px',
+                                        minWidth: '240px',
+                                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.8)',
+                                        zIndex: 10000,
+                                        backdropFilter: 'blur(10px)'
+                                    }}>
+                                        {!drawingMode ? (
+                                            // Main menu - choose a tool
+                                            <>
+                                                <div style={{
+                                                    background: 'rgba(99, 102, 241, 0.2)',
+                                                    padding: '12px 16px',
+                                                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                                    fontWeight: 'bold',
+                                                    fontSize: '15px',
+                                                    color: '#a78bfa'
+                                                }}>
+                                                    Select Tool
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        padding: '10px 16px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '13px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px',
+                                                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.3)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    onClick={() => setDrawingMode('freehand')}
+                                                >
+                                                    <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.pen }} />
+                                                    Freehand Draw
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        padding: '10px 16px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '13px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px',
+                                                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.3)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    onClick={() => setDrawingMode('circle')}
+                                                >
+                                                    <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.circle }} />
+                                                    Circle
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        padding: '10px 16px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '13px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px',
+                                                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.3)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    onClick={() => setDrawingMode('polygon')}
+                                                >
+                                                    <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.polygon }} />
+                                                    Polygon
+                                                </div>
+                                                {drawings.length > 0 && (
+                                                    <div
+                                                        style={{
+                                                            padding: '10px 16px',
+                                                            cursor: 'pointer',
+                                                            fontSize: '13px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '8px'
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)';
+                                                            e.currentTarget.style.color = '#fca5a5';
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.currentTarget.style.background = 'transparent';
+                                                            e.currentTarget.style.color = 'white';
+                                                        }}
+                                                        onClick={() => {
+                                                            if (confirm('Clear all drawings?')) {
+                                                                setDrawings([]);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.eraser }} />
+                                                        Clear All Drawings
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            // Tool settings panel
+                                            <>
+                                                <div style={{
+                                                    background: 'rgba(99, 102, 241, 0.2)',
+                                                    padding: '12px 16px',
+                                                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                                    fontWeight: 'bold',
+                                                    fontSize: '15px',
+                                                    color: '#a78bfa',
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center'
+                                                }}>
+                                                    <span>
+                                                        {drawingMode === 'freehand' && 'Freehand Draw'}
+                                                        {drawingMode === 'circle' && 'Circle Tool'}
+                                                        {drawingMode === 'polygon' && 'Polygon Tool'}
+                                                    </span>
+                                                    <button
+                                                        style={{
+                                                            background: 'rgba(239, 68, 68, 0.3)',
+                                                            border: '1px solid #ef4444',
+                                                            color: '#fca5a5',
+                                                            padding: '4px 10px',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            fontSize: '12px',
+                                                            fontWeight: '600'
+                                                        }}
+                                                        onClick={() => {
+                                                            setDrawingMode(null);
+                                                            setCurrentDrawing(null);
+                                                        }}
+                                                    >
+                                                        Exit
+                                                    </button>
+                                                </div>
+
+                                                <div style={{ padding: '16px' }}>
+                                                    {/* Color picker */}
+                                                    <div style={{ marginBottom: '14px' }}>
+                                                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#999' }}>
+                                                            Color
+                                                        </label>
+                                                        <input
+                                                            type="color"
+                                                            value={drawingColor}
+                                                            onChange={(e) => setDrawingColor(e.target.value)}
+                                                            style={{ width: '100%', height: '36px', cursor: 'pointer', border: '2px solid rgba(255, 255, 255, 0.2)', borderRadius: '6px' }}
+                                                        />
+                                                    </div>
+
+                                                    {/* Opacity slider */}
+                                                    <div style={{ marginBottom: '14px' }}>
+                                                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#999' }}>
+                                                            Opacity: {Math.round(drawingOpacity * 100)}%
+                                                        </label>
+                                                        <input
+                                                            type="range"
+                                                            min="0.1"
+                                                            max="1"
+                                                            step="0.1"
+                                                            value={drawingOpacity}
+                                                            onChange={(e) => setDrawingOpacity(parseFloat(e.target.value))}
+                                                            style={{ width: '100%' }}
+                                                        />
+                                                    </div>
+
+                                                    {/* Tool-specific settings */}
+                                                    {drawingMode === 'freehand' && (
+                                                        <div style={{ marginBottom: '14px' }}>
+                                                            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#999' }}>
+                                                                Brush Size: {brushSize}px
+                                                            </label>
+                                                            <input
+                                                                type="range"
+                                                                min="1"
+                                                                max="20"
+                                                                step="1"
+                                                                value={brushSize}
+                                                                onChange={(e) => setBrushSize(parseInt(e.target.value))}
+                                                                style={{ width: '100%' }}
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    {drawingMode === 'circle' && (
+                                                        <div style={{ marginBottom: '14px' }}>
+                                                            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#999' }}>
+                                                                Radius (pixels)
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                min="10"
+                                                                max="500"
+                                                                step="5"
+                                                                value={circleRadius}
+                                                                onChange={(e) => setCircleRadius(parseInt(e.target.value) || 50)}
+                                                                style={{
+                                                                    width: '100%',
+                                                                    padding: '8px',
+                                                                    background: 'rgba(0, 0, 0, 0.4)',
+                                                                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                                                                    borderRadius: '4px',
+                                                                    color: 'white',
+                                                                    fontSize: '14px'
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    {drawingMode === 'polygon' && (
+                                                        <div style={{
+                                                            padding: '10px',
+                                                            background: 'rgba(99, 102, 241, 0.1)',
+                                                            borderRadius: '6px',
+                                                            fontSize: '12px',
+                                                            color: '#a78bfa'
+                                                        }}>
+                                                            Click on battlefield to add points. Double-click to finish.
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Main Battlefield */}
@@ -1090,6 +1415,7 @@
                             }}
                             onWheel={handleWheel}
                             onMouseDown={handleBattlefieldMouseDown}
+                            onDoubleClick={handleBattlefieldDoubleClick}
                         >
                             {/* Background image layer */}
                             <div style={{
@@ -1138,6 +1464,109 @@
                                     zIndex: 0
                                 }} />
                             )}
+
+                            {/* SVG Drawing Layer */}
+                            <svg
+                                style={{
+                                    position: 'absolute',
+                                    top: '-5000px',
+                                    left: '-5000px',
+                                    width: '10000px',
+                                    height: '10000px',
+                                    pointerEvents: 'none',
+                                    zIndex: 5,
+                                    overflow: 'visible'
+                                }}
+                            >
+                                {/* Render completed drawings */}
+                                {drawings.map((drawing, index) => {
+                                    if (drawing.type === 'freehand') {
+                                        const pathData = drawing.points.map((point, i) =>
+                                            i === 0 ? `M ${point.x} ${point.y}` : `L ${point.x} ${point.y}`
+                                        ).join(' ');
+
+                                        return (
+                                            <path
+                                                key={index}
+                                                d={pathData}
+                                                stroke={drawing.color}
+                                                strokeWidth={drawing.brushSize}
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                fill="none"
+                                                opacity={drawing.opacity}
+                                            />
+                                        );
+                                    } else if (drawing.type === 'circle') {
+                                        return (
+                                            <circle
+                                                key={index}
+                                                cx={drawing.cx}
+                                                cy={drawing.cy}
+                                                r={drawing.radius}
+                                                stroke={drawing.color}
+                                                strokeWidth={3}
+                                                fill={drawing.color}
+                                                opacity={drawing.opacity}
+                                            />
+                                        );
+                                    } else if (drawing.type === 'polygon') {
+                                        const points = drawing.points.map(p => `${p.x},${p.y}`).join(' ');
+                                        return (
+                                            <polygon
+                                                key={index}
+                                                points={points}
+                                                stroke={drawing.color}
+                                                strokeWidth={3}
+                                                fill={drawing.color}
+                                                opacity={drawing.opacity}
+                                            />
+                                        );
+                                    }
+                                    return null;
+                                })}
+
+                                {/* Render current drawing in progress */}
+                                {currentDrawing && (
+                                    <>
+                                        {currentDrawing.type === 'freehand' && currentDrawing.points.length > 1 && (
+                                            <path
+                                                d={currentDrawing.points.map((point, i) =>
+                                                    i === 0 ? `M ${point.x} ${point.y}` : `L ${point.x} ${point.y}`
+                                                ).join(' ')}
+                                                stroke={currentDrawing.color}
+                                                strokeWidth={currentDrawing.brushSize}
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                fill="none"
+                                                opacity={currentDrawing.opacity}
+                                            />
+                                        )}
+                                        {currentDrawing.type === 'polygon' && currentDrawing.points.length > 0 && (
+                                            <>
+                                                <polyline
+                                                    points={currentDrawing.points.map(p => `${p.x},${p.y}`).join(' ')}
+                                                    stroke={currentDrawing.color}
+                                                    strokeWidth={3}
+                                                    fill="none"
+                                                    opacity={currentDrawing.opacity}
+                                                />
+                                                {currentDrawing.points.map((point, i) => (
+                                                    <circle
+                                                        key={i}
+                                                        cx={point.x}
+                                                        cy={point.y}
+                                                        r={5}
+                                                        fill={currentDrawing.color}
+                                                        opacity={currentDrawing.opacity}
+                                                    />
+                                                ))}
+                                            </>
+                                        )}
+                                    </>
+                                )}
+                            </svg>
+
                             {/* Render all character tokens */}
                             {characters.map(char => {
                                 const hpPercent = char.maxHp > 0 ? Math.min(100, (char.hp / char.maxHp) * 100) : 0;
