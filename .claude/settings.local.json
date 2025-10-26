@@ -12,7 +12,8 @@
       "WebSearch",
       "WebFetch(domain:lucide.dev)",
       "WebFetch(domain:icons.getbootstrap.com)",
-      "WebFetch(domain:feathericons.com)"
+      "WebFetch(domain:feathericons.com)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

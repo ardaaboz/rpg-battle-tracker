@@ -383,18 +383,21 @@
                 }
 
                 // Calculate screen center in world coordinates
-                // Account for transform-origin: center center
+                // With transform-origin: center center, the center of the viewport maps to:
+                // worldCoord = (0 - panOffset) / zoomLevel + 5000
+                // Since viewport center is at (width/2, height/2) in screen space,
+                // we need: worldCoord = ((viewportCenter - viewportCenter) / zoomLevel) + viewportCenter - panOffset / zoomLevel + 5000
+                // which simplifies to: worldCoord = viewportCenter - panOffset / zoomLevel + 5000
                 const battlefield = battlefieldRef.current;
                 if (battlefield) {
                     const rect = battlefield.getBoundingClientRect();
-                    const centerX = rect.width / 2;
-                    const centerY = rect.height / 2;
-                    // At the visual center, the world coordinate is:
-                    var screenCenterX = centerX - panOffset.x / zoomLevel + 5000;
-                    var screenCenterY = centerY - panOffset.y / zoomLevel + 5000;
+                    const viewportCenterX = rect.width / 2;
+                    const viewportCenterY = rect.height / 2;
+                    var screenCenterX = (-panOffset.x / zoomLevel) + 5000;
+                    var screenCenterY = (-panOffset.y / zoomLevel) + 5000;
                 } else {
-                    var screenCenterX = 5400;
-                    var screenCenterY = 5300;
+                    var screenCenterX = 5000;
+                    var screenCenterY = 5000;
                 }
 
                 // Auto-generate name for structures based on icon
@@ -2186,7 +2189,7 @@
                                                             strokeWidth="3"
                                                             paintOrder="stroke"
                                                         >
-                                                            {feet.toFixed(1)}ft / {inches.toFixed(0)}in / {meters.toFixed(2)}m
+                                                            {feet.toFixed(1)}ft / {meters.toFixed(2)}m
                                                         </text>
                                                     </g>
                                                 );
@@ -2353,26 +2356,8 @@
                                         <div
                                             className="resize-handle"
                                             onMouseDown={(e) => handleResizeStart(e, char)}
-                                            style={{
-                                                position: 'absolute',
-                                                bottom: '-12px',
-                                                right: '-12px',
-                                                width: '26px',
-                                                height: '26px',
-                                                background: 'rgba(99, 102, 241, 0.9)',
-                                                border: '2px solid rgba(99, 102, 241, 1)',
-                                                borderRadius: '50%',
-                                                cursor: 'nwse-resize',
-                                                zIndex: 10,
-                                                opacity: 0,
-                                                transition: 'opacity 0.2s',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                padding: '4px'
-                                            }}
                                         >
-                                            <div style={{ width: '100%', height: '100%', color: 'white' }} dangerouslySetInnerHTML={{ __html: uiIcons.maximize }} />
+                                            <div style={{ width: '18px', height: '18px', color: 'white' }} dangerouslySetInnerHTML={{ __html: uiIcons.maximize }} />
                                         </div>
 
                                         {/* Rotate handle - top right (only for structures) */}
@@ -2380,26 +2365,8 @@
                                             <div
                                                 className="rotate-handle"
                                                 onMouseDown={(e) => handleRotateStart(e, char)}
-                                                style={{
-                                                    position: 'absolute',
-                                                    top: '-12px',
-                                                    right: '-12px',
-                                                    width: '26px',
-                                                    height: '26px',
-                                                    background: 'rgba(168, 85, 247, 0.9)',
-                                                    border: '2px solid rgba(168, 85, 247, 1)',
-                                                    borderRadius: '50%',
-                                                    cursor: 'grab',
-                                                    zIndex: 10,
-                                                    opacity: 0,
-                                                    transition: 'opacity 0.2s',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    padding: '4px'
-                                                }}
                                             >
-                                                <div style={{ width: '100%', height: '100%', color: 'white' }} dangerouslySetInnerHTML={{ __html: uiIcons.rotate }} />
+                                                <div style={{ width: '18px', height: '18px', color: 'white' }} dangerouslySetInnerHTML={{ __html: uiIcons.rotate }} />
                                             </div>
                                         )}
                                     </div>
