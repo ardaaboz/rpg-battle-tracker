@@ -20,16 +20,15 @@
     bottom: 0;
     left: 320px; /* Matches sidebar width */
     right: 0;
-    background: rgba(10, 10, 15, 0.95);
-    border-top: 2px solid rgba(60, 60, 70, 0.5);
+    background: rgba(20, 20, 30, 0.95);
+    border-top: 2px solid #444;
     padding: 14px 20px;
     display: flex;
     align-items: center;
     gap: 15px;
     z-index: 1000;
-    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.6);
+    box-shadow: 4px 0 10px rgba(0, 0, 0, 0.3);
     transition: left 0.3s ease;
-    backdrop-filter: blur(8px);
 }
 
 .initiative-bottom.sidebar-hidden {

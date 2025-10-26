@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Velutan Battle Tracker</title>
+    <title>Velutan Battle Map</title>
 
     <!-- CSS Files -->
     <link rel="stylesheet" href="css/main.css">
@@ -182,8 +182,8 @@
             const [backgroundOpacity, setBackgroundOpacity] = useState(1);
             const [editMode, setEditMode] = useState(null);
             const [draggedInitiative, setDraggedInitiative] = useState(null);
-            const [notesVisible, setNotesVisible] = useState(true);
-            const [notesPosition, setNotesPosition] = useState({ x: window.innerWidth - 340, y: 80 });
+            const [notesVisible, setNotesVisible] = useState(false);
+            const [notesPosition, setNotesPosition] = useState({ x: window.innerWidth - 340, y: 150 });
             const [notesSize, setNotesSize] = useState({ width: 300, height: 200 });
             const [cropperState, setCropperState] = useState(null); // { image, charId, scale: 1, position: { x: 0, y: 0 } }
             const [isDraggingNotes, setIsDraggingNotes] = useState(false);
@@ -886,7 +886,7 @@
                     {/* SIDEBAR - Character management, settings, save/load */}
                     <div className={`sidebar ${!sidebarVisible ? 'hidden' : ''}`}>
                         <h1 style={{ marginBottom: '20px', fontSize: '24px', textAlign: 'center', color: '#a78bfa' }}>
-                            Velutan Battle Tracker
+                            Velutan Battle Map
                         </h1>
 
                         {/* Add Character Section */}
