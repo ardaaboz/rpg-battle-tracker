@@ -1635,7 +1635,7 @@
                             onMouseDown={handleBattlefieldMouseDown}
                             onDoubleClick={handleBattlefieldDoubleClick}
                         >
-                            {/* Background image layer - fixed to viewport */}
+                            {/* Background image layer - pans with content */}
                             <div style={{
                                 position: 'absolute',
                                 top: 0,
@@ -1647,12 +1647,15 @@
                                     : backgroundImage === 'custom'
                                     ? `url(${customBackgroundImage})`
                                     : 'none',
-                                backgroundSize: `${100 * backgroundScale}% ${100 * backgroundScale}%`,
+                                backgroundSize: 'cover',
                                 backgroundPosition: 'center',
                                 backgroundRepeat: 'no-repeat',
                                 opacity: backgroundOpacity,
                                 pointerEvents: 'none',
-                                zIndex: 0
+                                zIndex: 0,
+                                transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+                                transformOrigin: 'center center',
+                                transition: isPanning ? 'none' : 'transform 0.2s ease'
                             }} />
 
                             {/* Content layer - contains all tokens */}
