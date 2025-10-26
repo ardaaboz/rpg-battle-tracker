@@ -2856,14 +2856,15 @@
                                     }}
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                    {/* Header */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                                         <div>
                                             <h2 style={{ margin: 0, color: '#a78bfa' }}>Image Gallery</h2>
                                             <p style={{ margin: '5px 0 0 0', fontSize: '13px', color: '#888' }}>
-                                                {galleryContext?.type === 'newCharacter' && 'Select an image for new character'}
-                                                {galleryContext?.type === 'editCharacter' && 'Select an image to change character portrait'}
+                                                {galleryContext?.type === 'newCharacter' && 'Select a character image'}
+                                                {galleryContext?.type === 'editCharacter' && 'Select a character image'}
                                                 {galleryContext?.type === 'background' && 'Select a background image'}
-                                                {!galleryContext && 'Manage your images - Upload, browse, or delete'}
+                                                {galleryContext?.type === 'manage' && 'Manage your images - Upload, organize, or delete'}
                                             </p>
                                         </div>
                                         <span
@@ -2877,12 +2878,120 @@
                                             onClick={() => {
                                                 setGalleryVisible(false);
                                                 setGalleryContext(null);
+                                                setGallerySearchQuery('');
+                                                setSelectedFolderId(null);
                                             }}
                                             onMouseOver={(e) => e.target.style.color = '#fff'}
                                             onMouseOut={(e) => e.target.style.color = '#999'}
                                         >
                                             ✕
                                         </span>
+                                    </div>
+
+                                    {/* Category Tabs (only in manage mode) */}
+                                    {galleryContext?.type === 'manage' && (
+                                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                                            <button
+                                                onClick={() => {
+                                                    setGalleryCategory('character');
+                                                    setSelectedFolderId(null);
+                                                    setGallerySearchQuery('');
+                                                }}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '10px',
+                                                    background: galleryCategory === 'character' ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.05)',
+                                                    border: galleryCategory === 'character' ? '2px solid #6366f1' : '2px solid rgba(255, 255, 255, 0.2)',
+                                                    borderRadius: '8px',
+                                                    color: 'white',
+                                                    cursor: 'pointer',
+                                                    fontWeight: 600,
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                Character Images ({galleryImages.filter(img => img.type === 'character').length})
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setGalleryCategory('background');
+                                                    setSelectedFolderId(null);
+                                                    setGallerySearchQuery('');
+                                                }}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '10px',
+                                                    background: galleryCategory === 'background' ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.05)',
+                                                    border: galleryCategory === 'background' ? '2px solid #6366f1' : '2px solid rgba(255, 255, 255, 0.2)',
+                                                    borderRadius: '8px',
+                                                    color: 'white',
+                                                    cursor: 'pointer',
+                                                    fontWeight: 600,
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                Background Images ({galleryImages.filter(img => img.type === 'background').length})
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Search and Sort Controls */}
+                                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Search images..."
+                                            value={gallerySearchQuery}
+                                            onChange={(e) => setGallerySearchQuery(e.target.value)}
+                                            style={{
+                                                flex: 1,
+                                                padding: '8px 12px',
+                                                background: 'rgba(0, 0, 0, 0.3)',
+                                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                                                borderRadius: '6px',
+                                                color: 'white',
+                                                fontSize: '13px'
+                                            }}
+                                        />
+                                        <select
+                                            value={gallerySortBy}
+                                            onChange={(e) => setGallerySortBy(e.target.value)}
+                                            style={{
+                                                padding: '8px 12px',
+                                                background: 'rgba(0, 0, 0, 0.3)',
+                                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                                                borderRadius: '6px',
+                                                color: 'white',
+                                                fontSize: '13px',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            <option value="date">Sort by Date</option>
+                                            <option value="name">Sort by Name</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Breadcrumb Navigation */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px', fontSize: '13px', color: '#888' }}>
+                                        <span
+                                            onClick={() => setSelectedFolderId(null)}
+                                            style={{
+                                                cursor: 'pointer',
+                                                color: selectedFolderId === null ? '#6366f1' : '#888',
+                                                fontWeight: selectedFolderId === null ? 600 : 400,
+                                                transition: 'color 0.2s'
+                                            }}
+                                            onMouseOver={(e) => e.target.style.color = '#6366f1'}
+                                            onMouseOut={(e) => e.target.style.color = selectedFolderId === null ? '#6366f1' : '#888'}
+                                        >
+                                            All Images
+                                        </span>
+                                        {selectedFolderId && (
+                                            <>
+                                                <span>/</span>
+                                                <span style={{ color: '#6366f1', fontWeight: 600 }}>
+                                                    {currentFolders.find(f => f.id === selectedFolderId)?.name || 'Unknown'}
+                                                </span>
+                                            </>
+                                        )}
                                     </div>
 
                                     {/* Upload Button */}
@@ -2896,8 +3005,13 @@
                                                 const files = Array.from(e.target.files);
                                                 if (files.length === 0) return;
 
-                                                // If there's a context (selecting for use), only use first file
-                                                if (galleryContext) {
+                                                // Determine the category based on context
+                                                const imageCategory = galleryContext?.type === 'background' ? 'background' :
+                                                                     galleryContext?.type === 'manage' ? galleryCategory :
+                                                                     'character';
+
+                                                // If selecting for use (not manage mode), only use first file
+                                                if (galleryContext && galleryContext.type !== 'manage') {
                                                     const file = files[0];
                                                     const reader = new FileReader();
                                                     reader.onload = (event) => {
@@ -2905,7 +3019,9 @@
                                                             id: Date.now() + Math.random(),
                                                             url: event.target.result,
                                                             name: file.name,
-                                                            type: 'character'
+                                                            type: imageCategory,
+                                                            dateAdded: Date.now(),
+                                                            folderId: selectedFolderId
                                                         };
 
                                                         // Add to gallery
@@ -2929,7 +3045,7 @@
                                                     };
                                                     reader.readAsDataURL(file);
                                                 } else {
-                                                    // No context (manage gallery mode) - upload all files
+                                                    // Manage mode - upload all files
                                                     const newImages = [];
                                                     let loadedCount = 0;
 
@@ -2940,7 +3056,9 @@
                                                                 id: Date.now() + Math.random() + index,
                                                                 url: event.target.result,
                                                                 name: file.name,
-                                                                type: 'character'
+                                                                type: imageCategory,
+                                                                dateAdded: Date.now(),
+                                                                folderId: selectedFolderId
                                                             });
 
                                                             loadedCount++;
@@ -2971,13 +3089,136 @@
                                                 cursor: 'pointer'
                                             }}
                                         >
-                                            <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.upload }} />
+                                            <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.image }} />
                                             Upload Images
                                         </label>
                                     </div>
 
+                                    {/* Create Folder Button (only in manage mode and when not viewing a folder) */}
+                                    {galleryContext?.type === 'manage' && selectedFolderId === null && (
+                                        <button
+                                            onClick={() => {
+                                                const folderName = prompt('Enter folder name:');
+                                                if (folderName && folderName.trim()) {
+                                                    const newFolder = {
+                                                        id: Date.now() + Math.random(),
+                                                        name: folderName.trim(),
+                                                        category: galleryCategory
+                                                    };
+                                                    const updatedFolders = [...galleryFolders, newFolder];
+                                                    setGalleryFolders(updatedFolders);
+                                                    localStorage.setItem('battleMapFolders', JSON.stringify(updatedFolders));
+                                                }
+                                            }}
+                                            className="btn btn-secondary"
+                                            style={{
+                                                width: '100%',
+                                                marginBottom: '20px',
+                                                display: 'flex',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                gap: '8px'
+                                            }}
+                                        >
+                                            <span style={{ fontSize: '16px' }}>📁</span>
+                                            Create Folder
+                                        </button>
+                                    )}
+
+                                    {/* Folders Display (only when at root level) */}
+                                    {selectedFolderId === null && currentFolders.length > 0 && (
+                                        <div style={{ marginBottom: '20px' }}>
+                                            <h3 style={{ fontSize: '14px', color: '#a78bfa', marginBottom: '10px' }}>Folders</h3>
+                                            <div style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                                                gap: '10px',
+                                                marginBottom: '15px'
+                                            }}>
+                                                {currentFolders.map(folder => (
+                                                    <div
+                                                        key={folder.id}
+                                                        onClick={() => setSelectedFolderId(folder.id)}
+                                                        style={{
+                                                            padding: '15px',
+                                                            background: 'rgba(99, 102, 241, 0.1)',
+                                                            border: '2px solid rgba(99, 102, 241, 0.3)',
+                                                            borderRadius: '8px',
+                                                            cursor: 'pointer',
+                                                            textAlign: 'center',
+                                                            transition: 'all 0.2s',
+                                                            position: 'relative'
+                                                        }}
+                                                        onMouseOver={(e) => {
+                                                            e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)';
+                                                            e.currentTarget.style.borderColor = '#6366f1';
+                                                        }}
+                                                        onMouseOut={(e) => {
+                                                            e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+                                                            e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+                                                        }}
+                                                    >
+                                                        <div style={{ fontSize: '32px', marginBottom: '5px' }}>📁</div>
+                                                        <div style={{ fontSize: '12px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                            {folder.name}
+                                                        </div>
+                                                        <div style={{ fontSize: '10px', color: '#888', marginTop: '3px' }}>
+                                                            {galleryImages.filter(img => img.folderId === folder.id).length} images
+                                                        </div>
+                                                        {/* Delete folder button */}
+                                                        {galleryContext?.type === 'manage' && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (confirm(`Delete folder "${folder.name}"? Images will be moved to root.`)) {
+                                                                        // Move images in this folder to root
+                                                                        const updatedImages = galleryImages.map(img =>
+                                                                            img.folderId === folder.id ? { ...img, folderId: null } : img
+                                                                        );
+                                                                        setGalleryImages(updatedImages);
+                                                                        localStorage.setItem('battleMapGallery', JSON.stringify(updatedImages));
+
+                                                                        // Delete folder
+                                                                        const updatedFolders = galleryFolders.filter(f => f.id !== folder.id);
+                                                                        setGalleryFolders(updatedFolders);
+                                                                        localStorage.setItem('battleMapFolders', JSON.stringify(updatedFolders));
+                                                                    }
+                                                                }}
+                                                                style={{
+                                                                    position: 'absolute',
+                                                                    top: '5px',
+                                                                    right: '5px',
+                                                                    width: '20px',
+                                                                    height: '20px',
+                                                                    borderRadius: '50%',
+                                                                    background: 'rgba(239, 68, 68, 0.9)',
+                                                                    border: 'none',
+                                                                    color: 'white',
+                                                                    cursor: 'pointer',
+                                                                    fontSize: '12px',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center'
+                                                                }}
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Images Grid Title */}
+                                    {(selectedFolderId !== null || currentFolders.length > 0) && (
+                                        <h3 style={{ fontSize: '14px', color: '#a78bfa', marginBottom: '10px' }}>
+                                            {selectedFolderId ? 'Images in Folder' : 'Images'}
+                                        </h3>
+                                    )}
+
                                     {/* Gallery Grid */}
-                                    {galleryImages.length === 0 ? (
+                                    {filteredGalleryImages.length === 0 ? (
                                         <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
                                             <p>No images in gallery</p>
                                             <p style={{ fontSize: '14px' }}>Upload images to use them for characters or backgrounds</p>
@@ -2988,7 +3229,7 @@
                                             gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
                                             gap: '15px'
                                         }}>
-                                            {galleryImages.map((image) => (
+                                            {filteredGalleryImages.map((image) => (
                                                 <div
                                                     key={image.id}
                                                     style={{
