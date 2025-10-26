@@ -49,3 +49,9 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(99, 102, 241, 0.7);
 }
+
+/* Hover-only delete buttons */
+.image-delete-btn { transition: opacity 0.2s !important; }
+div:hover > .image-delete-btn { opacity: 1 !important; }
+.folder-delete-btn { transition: opacity 0.2s !important; }
+div:hover > .folder-delete-btn { opacity: 1 !important; }

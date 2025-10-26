@@ -17,7 +17,8 @@
       "Bash(npm start)",
       "Bash(git checkout:*)",
       "Bash(rm:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
