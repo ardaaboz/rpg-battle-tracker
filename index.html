@@ -213,6 +213,8 @@
             const [galleryImages, setGalleryImages] = useState([]); // {id, url, name, type: 'character'|'background'}
             const [galleryVisible, setGalleryVisible] = useState(false);
             const [galleryContext, setGalleryContext] = useState(null); // { type: 'newCharacter' | 'editCharacter' | 'background', charId?: string }
+            const [copiedCharacter, setCopiedCharacter] = useState(null); // For copy/paste
+            const [selectedCharacter, setSelectedCharacter] = useState(null); // Currently selected character for copy
 
             // Form data for adding new characters
             const [formData, setFormData] = useState({
@@ -527,6 +529,7 @@
                     y: gameY - char.y
                 });
                 setDraggedChar(char.id);
+                setSelectedCharacter(char); // Select for copy/paste
             };
 
             /**
@@ -947,10 +950,35 @@
                         e.preventDefault();
                         undo();
                     }
+                    // Ctrl+C or Cmd+C for copy
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedCharacter) {
+                        e.preventDefault();
+                        setCopiedCharacter(selectedCharacter);
+                    }
+                    // Ctrl+V or Cmd+V for paste
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'v' && copiedCharacter) {
+                        e.preventDefault();
+                        saveHistory();
+                        const battlefield = battlefieldRef.current;
+                        const viewportCenterX = battlefield ? (battlefield.offsetWidth / 2 - panOffset.x) / zoomLevel : 400;
+                        const viewportCenterY = battlefield ? (battlefield.offsetHeight / 2 - panOffset.y) / zoomLevel : 300;
+
+                        const pastedChar = {
+                            ...copiedCharacter,
+                            id: Date.now(),
+                            x: viewportCenterX - 40 + Math.random() * 80,
+                            y: viewportCenterY - 40 + Math.random() * 80,
+                            initiative: copiedCharacter.initiative !== null ?
+                                (Math.max(...characters.filter(c => c.initiative !== null).map(c => c.initiative), 0) + 1) :
+                                null
+                        };
+                        setCharacters([pastedChar, ...characters]);
+                        setSelectedCharacter(pastedChar.id);
+                    }
                 };
                 document.addEventListener('keydown', handleKeyDown);
                 return () => document.removeEventListener('keydown', handleKeyDown);
-            }, [history, characters, drawings]); // Dependencies for undo function
+            }, [history, characters, drawings, selectedCharacter, copiedCharacter, panOffset, zoomLevel]); // Dependencies
 
             // Load gallery images from localStorage on mount
             useEffect(() => {
@@ -2111,8 +2139,11 @@
                                             multiple
                                             onChange={(e) => {
                                                 const files = Array.from(e.target.files);
-                                                const file = files[0]; // Use first file for immediate selection
-                                                if (file) {
+                                                if (files.length === 0) return;
+
+                                                // If there's a context (selecting for use), only use first file
+                                                if (galleryContext) {
+                                                    const file = files[0];
                                                     const reader = new FileReader();
                                                     reader.onload = (event) => {
                                                         const newImage = {
@@ -2127,23 +2158,46 @@
                                                         setGalleryImages(updatedGallery);
                                                         localStorage.setItem('battleMapGallery', JSON.stringify(updatedGallery));
 
-                                                        // If there's a context, immediately use this image
-                                                        if (galleryContext) {
-                                                            if (galleryContext.type === 'newCharacter' || galleryContext.type === 'editCharacter') {
-                                                                setCropperState({
-                                                                    image: event.target.result,
-                                                                    charId: galleryContext.type === 'newCharacter' ? 'new' : galleryContext.charId,
-                                                                    scale: 1,
-                                                                    position: { x: 0, y: 0 }
-                                                                });
-                                                                setGalleryVisible(false);
-                                                            } else if (galleryContext.type === 'background') {
-                                                                setCustomBackgroundImage(event.target.result);
-                                                                setGalleryVisible(false);
-                                                            }
+                                                        // Immediately use this image
+                                                        if (galleryContext.type === 'newCharacter' || galleryContext.type === 'editCharacter') {
+                                                            setCropperState({
+                                                                image: event.target.result,
+                                                                charId: galleryContext.type === 'newCharacter' ? 'new' : galleryContext.charId,
+                                                                scale: 1,
+                                                                position: { x: 0, y: 0 }
+                                                            });
+                                                            setGalleryVisible(false);
+                                                        } else if (galleryContext.type === 'background') {
+                                                            setCustomBackgroundImage(event.target.result);
+                                                            setGalleryVisible(false);
                                                         }
                                                     };
                                                     reader.readAsDataURL(file);
+                                                } else {
+                                                    // No context (manage gallery mode) - upload all files
+                                                    const newImages = [];
+                                                    let loadedCount = 0;
+
+                                                    files.forEach((file, index) => {
+                                                        const reader = new FileReader();
+                                                        reader.onload = (event) => {
+                                                            newImages.push({
+                                                                id: Date.now() + Math.random() + index,
+                                                                url: event.target.result,
+                                                                name: file.name,
+                                                                type: 'character'
+                                                            });
+
+                                                            loadedCount++;
+                                                            // When all files are loaded, update gallery
+                                                            if (loadedCount === files.length) {
+                                                                const updatedGallery = [...galleryImages, ...newImages];
+                                                                setGalleryImages(updatedGallery);
+                                                                localStorage.setItem('battleMapGallery', JSON.stringify(updatedGallery));
+                                                            }
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    });
                                                 }
                                                 e.target.value = ''; // Reset input
                                             }}
