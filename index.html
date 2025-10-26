@@ -1647,7 +1647,7 @@
                                     : backgroundImage === 'custom'
                                     ? `url(${customBackgroundImage})`
                                     : 'none',
-                                backgroundSize: 'cover',
+                                backgroundSize: `${100 * backgroundScale}% ${100 * backgroundScale}%`,
                                 backgroundPosition: 'center',
                                 backgroundRepeat: 'no-repeat',
                                 opacity: backgroundOpacity,
