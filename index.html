@@ -103,6 +103,7 @@
             const [currentTurn, setCurrentTurn] = useState(0);
             const [notes, setNotes] = useState('');
             const [history, setHistory] = useState([]);
+            const [redoHistory, setRedoHistory] = useState([]);
             const [draggedInitiativeIndex, setDraggedInitiativeIndex] = useState(null);
             const [hoverInitiativeIndex, setHoverInitiativeIndex] = useState(null);
             const [backgroundImage, setBackgroundImage] = useState('none');
@@ -150,6 +151,10 @@
             const [openStructureCategories, setOpenStructureCategories] = useState(['buildings']); // Open accordion categories
             const [copiedCharacter, setCopiedCharacter] = useState(null); // For copy/paste
             const [selectedCharacter, setSelectedCharacter] = useState(null); // Currently selected character for copy
+
+            // Structure placement mode
+            const [placementMode, setPlacementMode] = useState(null); // { icon, color, rotation }
+            const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 }); // For cursor preview
 
             // Form data for adding new characters
             const [formData, setFormData] = useState({
@@ -460,6 +465,7 @@
                     drawings: JSON.parse(JSON.stringify(drawings)),
                     eraserMasks: JSON.parse(JSON.stringify(eraserMasks))
                 }]);
+                setRedoHistory([]); // Clear redo history when new action is performed
             };
 
             /**
@@ -469,6 +475,12 @@
             const undo = () => {
                 if (history.length > 0) {
                     const previous = history[history.length - 1];
+                    // Save current state to redo history
+                    setRedoHistory([...redoHistory.slice(-9), {
+                        characters: JSON.parse(JSON.stringify(characters)),
+                        drawings: JSON.parse(JSON.stringify(drawings)),
+                        eraserMasks: JSON.parse(JSON.stringify(eraserMasks))
+                    }]);
                     setCharacters(previous.characters || previous); // Support old format
                     if (previous.drawings) {
                         setDrawings(previous.drawings);
@@ -477,6 +489,29 @@
                         setEraserMasks(previous.eraserMasks);
                     }
                     setHistory(history.slice(0, -1));
+                }
+            };
+
+            /**
+             * Redo last undone action
+             */
+            const redo = () => {
+                if (redoHistory.length > 0) {
+                    const next = redoHistory[redoHistory.length - 1];
+                    // Save current state to undo history
+                    setHistory([...history.slice(-9), {
+                        characters: JSON.parse(JSON.stringify(characters)),
+                        drawings: JSON.parse(JSON.stringify(drawings)),
+                        eraserMasks: JSON.parse(JSON.stringify(eraserMasks))
+                    }]);
+                    setCharacters(next.characters);
+                    if (next.drawings) {
+                        setDrawings(next.drawings);
+                    }
+                    if (next.eraserMasks) {
+                        setEraserMasks(next.eraserMasks);
+                    }
+                    setRedoHistory(redoHistory.slice(0, -1));
                 }
             };
 
@@ -1066,6 +1101,41 @@
                 });
             };
 
+            // Handle placing structure at click location
+            const handlePlaceStructure = (e) => {
+                if (!placementMode) return;
+
+                const battlefield = battlefieldRef.current;
+                if (!battlefield) return;
+
+                const rect = battlefield.getBoundingClientRect();
+                const x = (e.clientX - rect.left - panOffset.x) / zoomLevel;
+                const y = (e.clientY - rect.top - panOffset.y) / zoomLevel;
+
+                const newStructure = {
+                    id: Date.now(),
+                    name: placementMode.icon.charAt(0).toUpperCase() + placementMode.icon.slice(1),
+                    type: 'structure',
+                    hp: 0,
+                    maxHp: 0,
+                    initiative: null,
+                    image: '',
+                    x,
+                    y,
+                    size: 80,
+                    isDead: false,
+                    statuses: [],
+                    damageLog: [],
+                    structureIcon: placementMode.icon,
+                    structureColor: placementMode.color,
+                    rotation: placementMode.rotation
+                };
+
+                saveHistory();
+                setCharacters([...characters, newStructure]);
+                setPlacementMode(null); // Exit placement mode
+            };
+
             // ========== INITIATIVE ORDER ==========
 
             /**
@@ -1324,6 +1394,33 @@
                     setCharacters(presetCharacters);
                 }
             }, [characters.length]);
+
+            // Structure placement mode - keyboard & mouse handlers
+            useEffect(() => {
+                if (!placementMode) return;
+
+                const handleKeyDown = (e) => {
+                    if (e.key === 'q' || e.key === 'Q') {
+                        setPlacementMode(prev => ({...prev, rotation: (prev.rotation - 15) % 360}));
+                    } else if (e.key === 'e' || e.key === 'E') {
+                        setPlacementMode(prev => ({...prev, rotation: (prev.rotation + 15) % 360}));
+                    } else if (e.key === 'Escape') {
+                        setPlacementMode(null);
+                    }
+                };
+
+                const handleMouseMove = (e) => {
+                    setMousePosition({ x: e.clientX, y: e.clientY });
+                };
+
+                window.addEventListener('keydown', handleKeyDown);
+                window.addEventListener('mousemove', handleMouseMove);
+
+                return () => {
+                    window.removeEventListener('keydown', handleKeyDown);
+                    window.removeEventListener('mousemove', handleMouseMove);
+                };
+            }, [placementMode]);
 
             // ========== GALLERY FILTERING & SORTING ==========
 
@@ -1713,11 +1810,21 @@
                             )}
                             <button
                                 className="btn btn-primary"
-                                onClick={addCharacter}
+                                onClick={() => {
+                                    if (formData.type === 'structure') {
+                                        setPlacementMode({
+                                            icon: formData.structureIcon,
+                                            color: formData.structureColor,
+                                            rotation: 0
+                                        });
+                                    } else {
+                                        addCharacter();
+                                    }
+                                }}
                                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                             >
                                 <span style={{ fontSize: '18px' }}>+</span>
-                                <span>{formData.type === 'structure' ? 'Add Structure' : 'Add Character'}</span>
+                                <span>{formData.type === 'structure' ? 'Place Structure (Click Map)' : 'Add Character'}</span>
                             </button>
 
                             {/* Keyboard shortcuts tip */}
@@ -1930,6 +2037,36 @@
                         {/* Toolbar (top-right) */}
                         <div className="toolbar">
                             <button
+                                className="toolbar-btn"
+                                onClick={() => {
+                                    if (confirm('Clear all characters from battlefield?')) {
+                                        saveHistory();
+                                        setCharacters([]);
+                                    }
+                                }}
+                            >
+                                <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.trash }} />
+                                Clear All
+                            </button>
+                            <button
+                                className="toolbar-btn"
+                                onClick={undo}
+                                disabled={history.length === 0}
+                                style={{ opacity: history.length === 0 ? 0.5 : 1 }}
+                            >
+                                <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.undo }} />
+                                Undo
+                            </button>
+                            <button
+                                className="toolbar-btn"
+                                onClick={redo}
+                                disabled={redoHistory.length === 0}
+                                style={{ opacity: redoHistory.length === 0 ? 0.5 : 1 }}
+                            >
+                                <span style={{ width: '16px', height: '16px', transform: 'scaleX(-1)' }} dangerouslySetInnerHTML={{ __html: uiIcons.undo }} />
+                                Redo
+                            </button>
+                            <button
                                 className={`toolbar-btn ${showGrid ? 'active' : ''}`}
                                 onClick={() => setShowGrid(!showGrid)}
                             >
@@ -1951,27 +2088,6 @@
                             >
                                 <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.sparkles }} />
                                 {showSpellsPermanently ? 'Hide Spells' : 'Show Spells'}
-                            </button>
-                            <button
-                                className="toolbar-btn"
-                                onClick={undo}
-                                disabled={history.length === 0}
-                                style={{ opacity: history.length === 0 ? 0.5 : 1 }}
-                            >
-                                <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.undo }} />
-                                Undo
-                            </button>
-                            <button
-                                className="toolbar-btn"
-                                onClick={() => {
-                                    if (confirm('Clear all characters from battlefield?')) {
-                                        saveHistory();
-                                        setCharacters([]);
-                                    }
-                                }}
-                            >
-                                <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: uiIcons.trash }} />
-                                Clear All
                             </button>
                             <button
                                 className={`toolbar-btn ${notesVisible ? 'active' : ''}`}
@@ -2321,10 +2437,11 @@
                             className={`battlefield ${showGrid ? 'grid' : ''}`}
                             style={{
                                 position: 'relative',
-                                cursor: isPanning ? 'grabbing' : 'default'
+                                cursor: placementMode ? 'crosshair' : (isPanning ? 'grabbing' : 'default')
                             }}
                             onWheel={handleWheel}
                             onMouseDown={handleBattlefieldMouseDown}
+                            onClick={placementMode ? handlePlaceStructure : null}
                             onDoubleClick={handleBattlefieldDoubleClick}
                             onContextMenu={handleBattlefieldRightClick}
                         >
@@ -4494,6 +4611,46 @@
                             </button>
                         )}
                     </div>
+
+                    {/* Structure placement cursor preview */}
+                    {placementMode && (
+                        <div style={{
+                            position: 'fixed',
+                            left: mousePosition.x,
+                            top: mousePosition.y,
+                            width: '60px',
+                            height: '60px',
+                            transform: `translate(-50%, -50%) rotate(${placementMode.rotation}deg)`,
+                            pointerEvents: 'none',
+                            zIndex: 10000,
+                            color: placementMode.color,
+                            opacity: 0.7,
+                            filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.5))'
+                        }}
+                        dangerouslySetInnerHTML={{ __html: structureIcons[placementMode.icon] }}
+                        />
+                    )}
+                    {placementMode && (
+                        <div style={{
+                            position: 'fixed',
+                            bottom: '20px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            background: 'rgba(0,0,0,0.8)',
+                            color: 'white',
+                            padding: '12px 20px',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            zIndex: 10000,
+                            border: '2px solid rgba(99, 102, 241, 0.5)',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+                        }}>
+                            <div>Click map to place • Q/E to rotate • ESC to cancel</div>
+                            <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
+                                Rotation: {placementMode.rotation}°
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
