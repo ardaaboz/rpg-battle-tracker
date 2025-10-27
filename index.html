@@ -1457,9 +1457,77 @@
                                     <div className="input-group">
                                         <label>Icon</label>
                                         <div style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: 'repeat(auto-fill, minmax(40px, 1fr))', gap: '8px', padding: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', maxHeight: '200px', overflowY: 'auto', overflowX: 'hidden' }}>
-                                            {Object.keys(structureIconCategories).map(categoryKey => { const category = structureIconCategories[categoryKey]; const isOpen = openStructureCategories.includes(categoryKey); return (<div key={categoryKey} style={{ marginBottom: '10px' }}><div onClick={() => setOpenStructureCategories(isOpen ? openStructureCategories.filter(c => c !== categoryKey) : [...openStructureCategories, categoryKey])} style={{ padding: '8px', background: 'rgba(99,102,241,0.2)', borderRadius: '6px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ fontWeight: 600, fontSize: '13px' }}>{category.label}</span><span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: isOpen ? uiIcons.chevronDown : uiIcons.chevronRight }} /></div>{isOpen && (<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(40px, 1fr))', gap: '8px', padding: '10px 0' }}>{Object.keys(category.icons).map(iconKey => (<div key={iconKey} onClick={() => setFormData({ ...formData, structureIcon: iconKey })} style={{ width: '100%', aspectRatio: '1', minWidth: '40px', maxWidth: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: formData.structureIcon === iconKey ? '3px solid #6366f1' : '2px solid rgba(255,255,255,0.2)', borderRadius: '6px', background: formData.structureIcon === iconKey ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', transition: 'all 0.2s', color: formData.structureColor || '#ffffff', padding: '6px' }} title={iconKey} dangerouslySetInnerHTML={{ __html: category.icons[iconKey] }} />))}</div>)}</div>); })}
+                                            padding: '10px',
+                                            background: 'rgba(0,0,0,0.3)',
+                                            borderRadius: '8px',
+                                            maxHeight: '300px',
+                                            overflowY: 'auto',
+                                            overflowX: 'hidden'
+                                        }}>
+                                            {Object.keys(structureIconCategories).map(categoryKey => {
+                                                const category = structureIconCategories[categoryKey];
+                                                const isOpen = openStructureCategories.includes(categoryKey);
+                                                return (
+                                                    <div key={categoryKey} style={{ marginBottom: '8px' }}>
+                                                        <div
+                                                            onClick={() => setOpenStructureCategories(
+                                                                isOpen
+                                                                    ? openStructureCategories.filter(c => c !== categoryKey)
+                                                                    : [...openStructureCategories, categoryKey]
+                                                            )}
+                                                            style={{
+                                                                padding: '10px',
+                                                                background: 'rgba(99,102,241,0.2)',
+                                                                borderRadius: '6px',
+                                                                cursor: 'pointer',
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between',
+                                                                alignItems: 'center',
+                                                                transition: 'background 0.2s'
+                                                            }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.3)'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.2)'}
+                                                        >
+                                                            <span style={{ fontWeight: 600, fontSize: '14px' }}>{category.label}</span>
+                                                            <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: isOpen ? uiIcons.chevronDown : uiIcons.chevronRight }} />
+                                                        </div>
+                                                        {isOpen && (
+                                                            <div style={{
+                                                                display: 'grid',
+                                                                gridTemplateColumns: 'repeat(auto-fill, minmax(40px, 1fr))',
+                                                                gap: '8px',
+                                                                padding: '10px',
+                                                                marginTop: '5px'
+                                                            }}>
+                                                                {Object.keys(category.icons).map(iconKey => (
+                                                                    <div
+                                                                        key={iconKey}
+                                                                        onClick={() => setFormData({ ...formData, structureIcon: iconKey })}
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            aspectRatio: '1',
+                                                                            minWidth: '40px',
+                                                                            maxWidth: '50px',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            cursor: 'pointer',
+                                                                            border: formData.structureIcon === iconKey ? '3px solid #6366f1' : '2px solid rgba(255,255,255,0.2)',
+                                                                            borderRadius: '6px',
+                                                                            background: formData.structureIcon === iconKey ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)',
+                                                                            transition: 'all 0.2s',
+                                                                            color: formData.structureColor || '#ffffff',
+                                                                            padding: '6px'
+                                                                        }}
+                                                                        title={iconKey}
+                                                                        dangerouslySetInnerHTML={{ __html: category.icons[iconKey] }}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                     <div className="input-group">
