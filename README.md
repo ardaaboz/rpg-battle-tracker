@@ -5,7 +5,7 @@ A modern, intuitive web-based battle tracker designed for tabletop RPG sessions.
 ![Velutan Battle Tracker](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-## 🎮 Features
+## Features
 
 ### Character Management
 - **Drag-and-drop tokens** on a gridded or free-form battlefield
@@ -36,7 +36,7 @@ A modern, intuitive web-based battle tracker designed for tabletop RPG sessions.
 - Supports fractional damage (0.25, 0.5, 1.0)
 - Quick HP adjustment buttons for fast combat resolution
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - A modern web browser (Chrome, Firefox, Edge, Safari)
@@ -61,7 +61,7 @@ A modern, intuitive web-based battle tracker designed for tabletop RPG sessions.
      npx serve
 
      # Using VS Code Live Server extension
-     Right-click index.html → "Open with Live Server"
+     Right-click index.html "Open with Live Server"
      ```
 
 3. **Start your battle!**
@@ -69,28 +69,28 @@ A modern, intuitive web-based battle tracker designed for tabletop RPG sessions.
    - Add enemies and neutrals as needed
    - Track initiative, HP, damage, and status effects
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 rpg-battle-tracker/
-├── index.html              # Main HTML file with React app
+├── index.html # Main HTML file with React app
 ├── css/
-│   ├── main.css           # Global styles and resets
-│   ├── sidebar.css        # Sidebar and form styles
-│   ├── battlefield.css    # Battlefield and token styles
-│   ├── context-menu.css   # Right-click menu styles
-│   └── initiative.css     # Initiative bar and notes styles
-├── images/                 # Character portraits
-│   ├── uggnug.png
-│   ├── raizo.png
-│   ├── vissra.png
-│   ├── zaheed.png
-│   └── william.png
-├── README.md              # This file
-└── LICENSE                # MIT License
+│ ├── main.css # Global styles and resets
+│ ├── sidebar.css # Sidebar and form styles
+│ ├── battlefield.css # Battlefield and token styles
+│ ├── context-menu.css # Right-click menu styles
+│ └── initiative.css # Initiative bar and notes styles
+├── images/ # Character portraits
+│ ├── uggnug.png
+│ ├── raizo.png
+│ ├── vissra.png
+│ ├── zaheed.png
+│ └── william.png
+├── README.md # This file
+└── LICENSE # MIT License
 ```
 
-## 🎯 Usage Guide
+## Usage Guide
 
 ### Adding Characters
 
@@ -137,16 +137,16 @@ Available actions depend on character type:
 ### Saving & Loading
 
 1. **Save Battle**:
-   - Click "💾 Save Battle" button
+   - Click " Save Battle" button
    - Downloads a JSON file with all battle data
    - Includes characters, positions, HP, statuses, and notes
 
 2. **Load Battle**:
-   - Click "📂 Load Battle" button
+   - Click " Load Battle" button
    - Select a previously saved JSON file
    - Restores complete battle state
 
-## 🛠️ Technical Details
+## Technical Details
 
 ### Built With
 - **React 18** - UI framework
@@ -155,17 +155,17 @@ Available actions depend on character type:
 - **Local Storage** - No backend required
 
 ### Browser Compatibility
-- ✅ Chrome 90+
-- ✅ Firefox 88+
-- ✅ Edge 90+
-- ✅ Safari 14+
+- Chrome 90+
+- Firefox 88+
+- Edge 90+
+- Safari 14+
 
 ### Performance
 - Optimized for up to 50 characters on battlefield
 - Smooth 60 FPS animations
 - Low memory footprint (~50MB typical)
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Here's how you can help:
 
@@ -190,7 +190,7 @@ Contributions are welcome! Here's how you can help:
 - Follow existing CSS organization (separate files by component)
 - Test with multiple browsers before submitting
 
-## 📝 Changelog
+## Changelog
 
 ### Version 1.0.0 (2025-01-XX)
 - Initial release
@@ -205,33 +205,33 @@ Contributions are welcome! Here's how you can help:
 - Status effects system
 - Preset character support
 
-## 🐛 Known Issues
+## Known Issues
 
 - Image files must be in same directory for relative paths to work
 - Context menu may extend off screen on very small displays (auto-repositioning helps but not perfect)
 - Undo only tracks last 10 actions
 
-## 📜 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Built for the Velutan D&D campaign
 - Inspired by Roll20 and Foundry VTT
 - Background images from Unsplash
 - Character portraits created by the players
 
-## 📧 Contact
+## Contact
 
 **Project Maintainer**: Arda Aboz
 - GitHub: [@ardaaboz](https://github.com/ardaaboz)
 - Repository: [https://github.com/ardaaboz/rpg-battle-tracker](https://github.com/ardaaboz/rpg-battle-tracker)
 
-## 🌐 Live Demo
+## Live Demo
 
 Coming soon: [velutanbattlemap.com](https://velutanbattlemap.com)
 
 ---
 
-Made with ❤️ for tabletop RPG enthusiasts
+Made with for tabletop RPG enthusiasts
