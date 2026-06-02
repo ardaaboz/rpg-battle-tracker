@@ -1006,6 +1006,13 @@
              * Handle right-click on battlefield - prevent context menu
              */
             const handleBattlefieldRightClick = (e) => {
+                // Cancel placement mode on right-click
+                if (placementMode) {
+                    e.preventDefault();
+                    setPlacementMode(null);
+                    return;
+                }
+
                 // Check if clicking on a token or interactive element
                 const isToken = e.target.closest('.token');
                 const isContextMenu = e.target.closest('.context-menu');
@@ -1133,7 +1140,7 @@
 
                 saveHistory();
                 setCharacters([...characters, newStructure]);
-                setPlacementMode(null); // Exit placement mode
+                // Keep placement mode active for placing multiple structures
             };
 
             // ========== INITIATIVE ORDER ==========
@@ -1625,7 +1632,14 @@
                                                                 {Object.keys(category.icons).map(iconKey => (
                                                                     <div
                                                                         key={iconKey}
-                                                                        onClick={() => setFormData({ ...formData, structureIcon: iconKey })}
+                                                                        onClick={() => {
+                                                                            setFormData({ ...formData, structureIcon: iconKey });
+                                                                            setPlacementMode({
+                                                                                icon: iconKey,
+                                                                                color: formData.structureColor,
+                                                                                rotation: placementMode?.rotation || 0
+                                                                            });
+                                                                        }}
                                                                         style={{
                                                                             width: '100%',
                                                                             aspectRatio: '1',
@@ -1812,11 +1826,34 @@
                                 className="btn btn-primary"
                                 onClick={() => {
                                     if (formData.type === 'structure') {
-                                        setPlacementMode({
-                                            icon: formData.structureIcon,
-                                            color: formData.structureColor,
-                                            rotation: 0
-                                        });
+                                        // Place structure in center of screen
+                                        const battlefield = battlefieldRef.current;
+                                        if (battlefield) {
+                                            const rect = battlefield.getBoundingClientRect();
+                                            const x = rect.width / 2 - panOffset.x;
+                                            const y = rect.height / 2 - panOffset.y;
+
+                                            const newStructure = {
+                                                id: Date.now(),
+                                                name: formData.structureIcon.charAt(0).toUpperCase() + formData.structureIcon.slice(1),
+                                                type: 'structure',
+                                                hp: 0,
+                                                maxHp: 0,
+                                                initiative: null,
+                                                image: '',
+                                                x,
+                                                y,
+                                                size: 80,
+                                                isDead: false,
+                                                statuses: [],
+                                                damageLog: [],
+                                                structureIcon: formData.structureIcon,
+                                                structureColor: formData.structureColor,
+                                                rotation: placementMode?.rotation || 0
+                                            };
+                                            saveHistory();
+                                            setCharacters([...characters, newStructure]);
+                                        }
                                     } else {
                                         addCharacter();
                                     }
@@ -1824,7 +1861,7 @@
                                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                             >
                                 <span style={{ fontSize: '18px' }}>+</span>
-                                <span>{formData.type === 'structure' ? 'Place Structure (Click Map)' : 'Add Character'}</span>
+                                <span>{formData.type === 'structure' ? 'Add Structure (Center)' : 'Add Character'}</span>
                             </button>
 
                             {/* Keyboard shortcuts tip */}
@@ -4355,49 +4392,53 @@
 
                                 {/* Mark as Dead / Delete */}
                                 <div style={{ padding: '4px' }}>
-                                    <div
-                                        className="context-menu-item"
-                                        onClick={() => {
-                                            const newDeadStatus = !currentChar.isDead;
-                                            // If marking as dead, remove from initiative
-                                            if (newDeadStatus) {
-                                                updateCharacter(currentChar.id, { isDead: true, initiative: null });
-                                            } else {
-                                                // If reviving, re-add to initiative
-                                                const maxInitiative = characters.length > 0
-                                                    ? Math.max(...characters.filter(c => c.initiative !== null && c.initiative !== undefined).map(c => c.initiative), 0)
-                                                    : 0;
-                                                const initiative = maxInitiative + 1;
-                                                updateCharacter(currentChar.id, { isDead: false, initiative });
-                                            }
-                                        }}
-                                    >
-                                        <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: currentChar.isDead ? uiIcons.heart : uiIcons.skull }} />
-                                        {currentChar.isDead ? 'Revive' : 'Mark as Dead'}
-                                    </div>
-                                    <div
-                                        className="context-menu-item"
-                                        onClick={() => {
-                                            if (currentChar.initiative !== null && currentChar.initiative !== undefined) {
-                                                // Character has initiative - remove it
-                                                if (confirm(`Remove ${currentChar.name} from initiative order? (They will stay on the battlefield)`)) {
-                                                    saveHistory();
-                                                    updateCharacter(currentChar.id, { initiative: null });
+                                    {currentChar.type !== 'structure' && (
+                                        <div
+                                            className="context-menu-item"
+                                            onClick={() => {
+                                                const newDeadStatus = !currentChar.isDead;
+                                                // If marking as dead, remove from initiative
+                                                if (newDeadStatus) {
+                                                    updateCharacter(currentChar.id, { isDead: true, initiative: null });
+                                                } else {
+                                                    // If reviving, re-add to initiative
+                                                    const maxInitiative = characters.length > 0
+                                                        ? Math.max(...characters.filter(c => c.initiative !== null && c.initiative !== undefined).map(c => c.initiative), 0)
+                                                        : 0;
+                                                    const initiative = maxInitiative + 1;
+                                                    updateCharacter(currentChar.id, { isDead: false, initiative });
                                                 }
-                                            } else {
-                                                // Character doesn't have initiative - auto-add to end
-                                                const maxInitiative = characters.length > 0
-                                                    ? Math.max(...characters.filter(c => c.initiative !== null && c.initiative !== undefined).map(c => c.initiative), 0)
-                                                    : 0;
-                                                const initiative = maxInitiative + 1;
-                                                saveHistory();
-                                                updateCharacter(currentChar.id, { initiative });
-                                            }
-                                        }}
-                                    >
-                                        <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: currentChar.initiative !== null && currentChar.initiative !== undefined ? uiIcons.pause : uiIcons.play }} />
-                                        {currentChar.initiative !== null && currentChar.initiative !== undefined ? 'Remove from Initiative' : 'Add to Initiative'}
-                                    </div>
+                                            }}
+                                        >
+                                            <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: currentChar.isDead ? uiIcons.heart : uiIcons.skull }} />
+                                            {currentChar.isDead ? 'Revive' : 'Mark as Dead'}
+                                        </div>
+                                    )}
+                                    {currentChar.type !== 'structure' && (
+                                        <div
+                                            className="context-menu-item"
+                                            onClick={() => {
+                                                if (currentChar.initiative !== null && currentChar.initiative !== undefined) {
+                                                    // Character has initiative - remove it
+                                                    if (confirm(`Remove ${currentChar.name} from initiative order? (They will stay on the battlefield)`)) {
+                                                        saveHistory();
+                                                        updateCharacter(currentChar.id, { initiative: null });
+                                                    }
+                                                } else {
+                                                    // Character doesn't have initiative - auto-add to end
+                                                    const maxInitiative = characters.length > 0
+                                                        ? Math.max(...characters.filter(c => c.initiative !== null && c.initiative !== undefined).map(c => c.initiative), 0)
+                                                        : 0;
+                                                    const initiative = maxInitiative + 1;
+                                                    saveHistory();
+                                                    updateCharacter(currentChar.id, { initiative });
+                                                }
+                                            }}
+                                        >
+                                            <span style={{ width: '16px', height: '16px' }} dangerouslySetInnerHTML={{ __html: currentChar.initiative !== null && currentChar.initiative !== undefined ? uiIcons.pause : uiIcons.play }} />
+                                            {currentChar.initiative !== null && currentChar.initiative !== undefined ? 'Remove from Initiative' : 'Add to Initiative'}
+                                        </div>
+                                    )}
                                     <div
                                         className="context-menu-item danger"
                                         onClick={() => {
@@ -4645,7 +4686,7 @@
                             border: '2px solid rgba(99, 102, 241, 0.5)',
                             boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
                         }}>
-                            <div>Click map to place • Q/E to rotate • ESC to cancel</div>
+                            <div>Click to place • Q/E to rotate • Right-click or ESC to cancel</div>
                             <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
                                 Rotation: {placementMode.rotation}°
                             </div>
